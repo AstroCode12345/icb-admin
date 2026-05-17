@@ -1,0 +1,126 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green-900: #0f2b1e;
+  --green-800: #1b4332;
+  --green-700: #2d6a4f;
+  --green-600: #40916c;
+  --green-50:  #f0faf2;
+  --gold:      #c9984a;
+  --gold-light:#fdf3e3;
+  --red:       #dc2626;
+  --red-light: #fef2f2;
+  --gray-900:  #1a1a1a;
+  --gray-700:  #3d3935;
+  --gray-500:  #6e6862;
+  --gray-300:  #c8c4be;
+  --gray-200:  #e5e2de;
+  --gray-100:  #f2f0ee;
+  --gray-50:   #f8f7f5;
+  --white:     #ffffff;
+  --radius:    10px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 8px rgba(0,0,0,.04);
+  --shadow:    0 2px 8px rgba(0,0,0,.08), 0 4px 20px rgba(0,0,0,.05);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+}
+
+html { font-size: 15px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  background: var(--gray-100);
+  color: var(--gray-900);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Form elements ── */
+label {
+  display: block;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--gray-500);
+  margin-bottom: .35rem;
+  text-transform: uppercase;
+}
+input[type="text"],
+input[type="password"],
+input[type="url"],
+textarea {
+  width: 100%;
+  padding: .65rem .85rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: .95rem;
+  font-family: inherit;
+  color: var(--gray-900);
+  background: var(--white);
+  transition: border-color .15s, box-shadow .15s;
+  line-height: 1.5;
+}
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--green-700);
+  box-shadow: 0 0 0 3px rgba(45,106,79,.12);
+}
+textarea { resize: vertical; min-height: 72px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: .6rem 1.25rem;
+  border-radius: 8px;
+  font-size: .88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary  { background: var(--green-800); color: var(--white); }
+.btn-primary:hover:not(:disabled) { background: var(--green-700); }
+.btn-danger   { background: transparent; color: var(--red); border: 1.5px solid #fca5a5; }
+.btn-danger:hover:not(:disabled)  { background: var(--red-light); }
+.btn-ghost    { background: transparent; color: var(--gray-700); border: 1.5px solid var(--gray-200); }
+.btn-ghost:hover:not(:disabled)   { background: var(--gray-100); border-color: var(--gray-300); }
+
+/* ── Toggle ── */
+.toggle-wrap { display: flex; align-items: center; gap: .65rem; cursor: pointer; }
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--gray-300); border-radius: 22px;
+  cursor: pointer; transition: background .2s;
+}
+.toggle-track::before {
+  content: ""; position: absolute;
+  width: 16px; height: 16px;
+  left: 3px; top: 3px;
+  background: white; border-radius: 50%;
+  transition: transform .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+.toggle input:checked ~ .toggle-track { background: var(--green-700); }
+.toggle input:checked ~ .toggle-track::before { transform: translateX(18px); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 2rem; left: 50%;
+  transform: translateX(-50%);
+  padding: .8rem 1.5rem;
+  border-radius: 10px; font-weight: 600; font-size: .9rem;
+  box-shadow: var(--shadow-lg); z-index: 999;
+  animation: fadeUp .2s ease; white-space: nowrap;
+}
+.toast-success { background: var(--green-800); color: white; }
+.toast-error   { background: var(--red); color: white; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
