@@ -227,13 +227,13 @@ export default function Dashboard() {
             <Grid cols={3}>
               {(["fajr", "zuhr", "asr", "maghrib", "isha"] as const).map(name => (
                 <Field key={name} label={name.charAt(0).toUpperCase() + name.slice(1)}>
-                  <input type="text" value={content.prayers[name]} onChange={e => setPrayer(name, e.target.value)} placeholder="5:30 AM" />
+                  <input type="text" value={content.prayers[name]} onChange={e => setPrayer(name, e.target.value)} placeholder="5:00 AM" />
                 </Field>
               ))}
               <Field label="Last Updated">
                 <input type="text" value={content.prayers.lastUpdated}
                   onChange={e => setContent(c => c ? { ...c, prayers: { ...c.prayers, lastUpdated: e.target.value } } : c)}
-                  placeholder="May 2026" />
+                  placeholder="July 2026" />
               </Field>
             </Grid>
             <Divider label="Friday Prayer" />
@@ -254,12 +254,12 @@ export default function Dashboard() {
               <Field label="Speaker Name">
                 <input type="text" value={content.fridaySpeaker.name}
                   onChange={e => setContent(c => c ? { ...c, fridaySpeaker: { ...c.fridaySpeaker, name: e.target.value } } : c)}
-                  placeholder="Dr. Mohamed Lazzouni" />
+                  placeholder="Dr. Saleem Khanani" />
               </Field>
               <Field label="Date">
                 <input type="text" value={content.fridaySpeaker.date}
                   onChange={e => setContent(c => c ? { ...c, fridaySpeaker: { ...c.fridaySpeaker, date: e.target.value } } : c)}
-                  placeholder="May 9, 2026" />
+                  placeholder="July 17, 2026" />
               </Field>
             </Grid>
           </Section>
