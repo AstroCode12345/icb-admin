@@ -18,14 +18,14 @@ const API  = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
 const DEV_MOCK = {
   sha: "dev-sha",
   content: {
-    prayers: { fajr:"5:30 AM", zuhr:"1:30 PM", asr:"5:45 PM", maghrib:"7:40 PM", isha:"9:00 PM", jumuah:{ khutbah:"1:00 PM", iqamah:"1:30 PM" }, lastUpdated:"May 2026" },
-    fridaySpeaker: { name:"Dr. Mohamed Lazzouni", date:"April 24, 2026" },
+    prayers: { fajr:"5:00 AM", zuhr:"1:30 PM", asr:"6:00 PM", maghrib:"8:30 PM", isha:"10:05 PM", jumuah:{ khutbah:"1:00 PM", iqamah:"1:30 PM" }, lastUpdated:"July 2026" },
+    fridaySpeaker: { name:"Dr. Saleem Khanani", date:"July 17, 2026" },
     events: [
       { featured:true,  month:"May", day:"1", tag:"Community Program", title:"Unlocking Door to Jannah with Imam Adnan Wood-Smith", meta:"Thursday · 6:30–9:00 PM · Dinner included · Registration required" },
       { featured:false, month:"May", day:"9", tag:"Charity",           title:"First Annual Humanitarian Walk",                        meta:"Saturday · 10:00 AM · Open to all" },
     ],
     announcement: { show:false, text:"" },
-    donateUrl: "https://icbwayland.org/donate",
+    donateUrl: "https://icbwayland.org/donations.html",
   },
 };
 
