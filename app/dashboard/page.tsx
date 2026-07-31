@@ -15,6 +15,8 @@ type Content = {
   fridaySpeaker: { name: string; date: string };
   events: Event[];
   announcement: { show: boolean; text: string };
+  sundaySchool?: { zuhr: string };
+  contact?: { email: string; facebook: string; youtube: string };
   donateUrl: string;
 };
 
@@ -32,6 +34,8 @@ const Icon = {
   home:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   upload:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>,
   logout:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  book:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+  mail:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
 };
 
 /* ── Main Component ── */
@@ -147,6 +151,8 @@ export default function Dashboard() {
             { label: "Friday Speaker",  href: "#speaker",      icon: Icon.mic      },
             { label: "Announcement",    href: "#announcement", icon: Icon.bell     },
             { label: "Events",          href: "#events",       icon: Icon.calendar },
+            { label: "Sunday School",   href: "#school",       icon: Icon.book     },
+            { label: "Contact & Social",href: "#contact",      icon: Icon.mail     },
             { label: "Donate Link",     href: "#donate",       icon: Icon.heart    },
           ].map(item => (
             <a
@@ -394,6 +400,36 @@ export default function Dashboard() {
             <button onClick={addEvent} className="btn btn-ghost" style={{ width: "100%", gap: ".4rem", marginTop: ".25rem" }}>
               {Icon.plus} Add Event
             </button>
+          </Section>
+
+          {/* Sunday School */}
+          <Section id="school" title="Sunday School" icon={Icon.book}
+            subtitle="The Zuhr prayer time held during Sunday school. Shown on the Prayers, School, and Calendar pages.">
+            <Field label="Sunday Zuhr Time">
+              <input type="text" value={content.sundaySchool?.zuhr ?? ""}
+                onChange={e => setContent(c => c ? { ...c, sundaySchool: { zuhr: e.target.value } } : c)}
+                placeholder="12:30 PM" />
+            </Field>
+          </Section>
+
+          {/* Contact & Social */}
+          <Section id="contact" title="Contact & Social" icon={Icon.mail}
+            subtitle="The email address and social pages linked across the site.">
+            <Field label="Contact Email">
+              <input type="text" value={content.contact?.email ?? ""}
+                onChange={e => setContent(c => c ? { ...c, contact: { ...(c.contact ?? { email:"", facebook:"", youtube:"" }), email: e.target.value } } : c)}
+                placeholder="webmaster@icbwayland.org" />
+            </Field>
+            <Field label="Facebook Page URL" style={{ marginTop: ".85rem" }}>
+              <input type="url" value={content.contact?.facebook ?? ""}
+                onChange={e => setContent(c => c ? { ...c, contact: { ...(c.contact ?? { email:"", facebook:"", youtube:"" }), facebook: e.target.value } } : c)}
+                placeholder="https://www.facebook.com/icbwayland" />
+            </Field>
+            <Field label="YouTube Channel URL" style={{ marginTop: ".85rem" }}>
+              <input type="url" value={content.contact?.youtube ?? ""}
+                onChange={e => setContent(c => c ? { ...c, contact: { ...(c.contact ?? { email:"", facebook:"", youtube:"" }), youtube: e.target.value } } : c)}
+                placeholder="https://youtube.com/c/ICBWayland" />
+            </Field>
           </Section>
 
           {/* Donate */}

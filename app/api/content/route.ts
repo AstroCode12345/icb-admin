@@ -25,6 +25,8 @@ const DEV_MOCK = {
       { featured:false, month:"May", day:"9", tag:"Charity",           title:"First Annual Humanitarian Walk",                        meta:"Saturday · 10:00 AM · Open to all" },
     ],
     announcement: { show:false, text:"" },
+    sundaySchool: { zuhr: "12:30 PM" },
+    contact: { email:"webmaster@icbwayland.org", facebook:"https://www.facebook.com/icbwayland", youtube:"https://youtube.com/c/ICBWayland" },
     donateUrl: "https://icbwayland.org/donations.html",
   },
 };
