@@ -302,9 +302,8 @@ export default function Dashboard() {
               <div key={i} style={{
                 background: "var(--white)",
                 border: "1px solid var(--gray-200)",
-                borderLeft: "3px solid var(--green-700)",
-                borderRadius: "0 10px 10px 0",
-                padding: "1.25rem 1.25rem 1.25rem 1.35rem",
+                borderRadius: "10px",
+                padding: "1.25rem",
                 marginBottom: ".75rem",
               }}>
                 {/* Row 1: date badge + remove */}
