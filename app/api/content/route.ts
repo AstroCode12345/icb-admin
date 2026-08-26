@@ -15,21 +15,44 @@ const REPO = process.env.GITHUB_REPO ?? "";
 const FILE = "content.json";
 const API  = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
 
+// Sample data for local development only, returned when there is no real
+// GitHub token to read the live file with. It is flagged `mock: true` so the
+// dashboard can say plainly that these are not the live values — an admin
+// should never be looking at this and believe it is what the public sees.
+//
+// Keep it in step with the site's content.json. A stale copy here once left a
+// decommissioned donate URL sitting in the editor.
 const DEV_MOCK = {
   sha: "dev-sha",
+  mock: true,
   content: {
-    prayers: { fajr:"5:00 AM", zuhr:"1:30 PM", asr:"6:00 PM", maghrib:"8:30 PM", isha:"10:05 PM", jumuah:{ khutbah:"1:00 PM", iqamah:"1:30 PM" }, lastUpdated:"July 2026" },
-    fridaySpeaker: { name:"Dr. Saleem Khanani", date:"July 17, 2026" },
-    events: [
-      { featured:true,  month:"May", day:"1", tag:"Community Program", title:"Unlocking Door to Jannah with Imam Adnan Wood-Smith", meta:"Thursday · 6:30–9:00 PM · Dinner included · Registration required" },
-      { featured:false, month:"May", day:"9", tag:"Charity",           title:"First Annual Humanitarian Walk",                        meta:"Saturday · 10:00 AM · Open to all" },
+    prayers: {
+      fajr: "5:10 AM", zuhr: "1:30 PM", asr: "6:00 PM",
+      maghrib: "8:10 PM", isha: "9:45 PM",
+      jumuah: { khutbah: "1:00 PM", iqamah: "1:30 PM" },
+      lastUpdated: "August 2026",
+    },
+    khateebs: [
+      { date: "2026-08-28", name: "Dr. Mohamed Lazzouni" },
     ],
-    announcement: { show:false, text:"" },
+    events: [],
+    youthEvents: [],
+    announcement: { show: false, text: "" },
     sundaySchool: { zuhr: "12:30 PM" },
-    contact: { email:"webmaster@icbwayland.org", facebook:"https://www.facebook.com/icbwayland", youtube:"https://youtube.com/c/ICBWayland" },
-    donateUrl: "https://icbwayland.org/donations.html",
+    contact: {
+      email: "webmaster@icbwayland.org",
+      facebook: "https://www.facebook.com/icbwayland",
+      youtube: "https://youtube.com/c/ICBWayland",
+    },
+    donateUrl: "https://www.paypal.com/donate?hosted_button_id=Z25J5QYZZSYSE",
+    siteUpdated: "2026-08-26",
   },
 };
+
+function usingMockData() {
+  const token = process.env.GITHUB_TOKEN ?? "";
+  return !token || token.startsWith("ghp_xxx") || !REPO;
+}
 
 // GET — fetch current content.json from GitHub
 export async function GET(req: Request) {
@@ -38,14 +61,13 @@ export async function GET(req: Request) {
   }
 
   // In development with no real token, return mock data so the UI can be previewed
-  const token = process.env.GITHUB_TOKEN ?? "";
-  if (!token || token.startsWith("ghp_xxx")) {
+  if (usingMockData()) {
     return NextResponse.json(DEV_MOCK);
   }
 
   const res = await fetch(API, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
       Accept: "application/vnd.github.v3+json",
     },
     cache: "no-store",
@@ -58,5 +80,5 @@ export async function GET(req: Request) {
 
   const data = await res.json();
   const content = JSON.parse(Buffer.from(data.content, "base64").toString("utf8"));
-  return NextResponse.json({ content, sha: data.sha });
+  return NextResponse.json({ content, sha: data.sha, mock: false });
 }
