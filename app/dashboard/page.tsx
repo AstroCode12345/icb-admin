@@ -15,6 +15,14 @@ type Prayers = {
 type Event = { date: string; featured: boolean; tag: string; title: string; meta: string; };
 type YouthEvent = { date: string; title: string; tag?: string; meta?: string; signupUrl?: string; };
 type Khateeb = { date: string; name: string };
+// Free text rather than an ISO date: the school publishes ranges like
+// "Jul 1-Aug 15, 2026" alongside single days, and these are printed as
+// written rather than sorted or filtered.
+type SchoolDate = { when: string; what: string };
+type SundaySchool = {
+  year?: string; zuhr?: string; asr?: string;
+  existingDates?: SchoolDate[]; newDates?: SchoolDate[];
+};
 type Content = {
   prayers: Prayers;
   khateebs?: Khateeb[];
@@ -22,7 +30,7 @@ type Content = {
   events: Event[];
   youthEvents?: YouthEvent[];
   announcement: { show: boolean; text: string };
-  sundaySchool?: { zuhr: string };
+  sundaySchool?: SundaySchool;
   contact?: { email: string; facebook: string; youtube: string };
   donateUrl: string;
   siteUpdated?: string;
@@ -31,6 +39,7 @@ type Content = {
 const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "", meta: "" };
 const BLANK_YOUTH_EVENT: YouthEvent = { date: "", title: "", tag: "", meta: "", signupUrl: "" };
 const BLANK_KHATEEB: Khateeb = { date: "", name: "" };
+const BLANK_SCHOOL_DATE: SchoolDate = { when: "", what: "" };
 
 /** Is this ISO date today or later? Mirrors the website's own filter. */
 function isUpcoming(iso: string) {
@@ -152,6 +161,32 @@ export default function Dashboard() {
   }
   function removeKhateeb(i: number) {
     setContent(c => c ? { ...c, khateebs: (c.khateebs ?? []).filter((_, idx) => idx !== i) } : c);
+  }
+
+  /* Sunday school */
+  type DateList = "existingDates" | "newDates";
+  function setSchool(field: keyof SundaySchool, value: string) {
+    setContent(c => c ? { ...c, sundaySchool: { ...(c.sundaySchool ?? {}), [field]: value } } : c);
+  }
+  function updateSchoolDate(list: DateList, i: number, field: keyof SchoolDate, value: string) {
+    setContent(c => {
+      if (!c) return c;
+      const rows = [...(c.sundaySchool?.[list] ?? [])];
+      rows[i] = { ...rows[i], [field]: value };
+      return { ...c, sundaySchool: { ...(c.sundaySchool ?? {}), [list]: rows } };
+    });
+  }
+  function addSchoolDate(list: DateList) {
+    setContent(c => c ? { ...c, sundaySchool: {
+      ...(c.sundaySchool ?? {}),
+      [list]: [...(c.sundaySchool?.[list] ?? []), { ...BLANK_SCHOOL_DATE }],
+    } } : c);
+  }
+  function removeSchoolDate(list: DateList, i: number) {
+    setContent(c => c ? { ...c, sundaySchool: {
+      ...(c.sundaySchool ?? {}),
+      [list]: (c.sundaySchool?.[list] ?? []).filter((_, idx) => idx !== i),
+    } } : c);
   }
 
   /* Youth events */
@@ -382,7 +417,7 @@ export default function Dashboard() {
                   </div>
                   {past && (
                     <p style={{ fontSize: ".78rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
-                      This date has passed — it is already hidden on the website. Safe to remove.
+                      This date has passed, so it is already hidden on the website. Safe to remove.
                     </p>
                   )}
                 </div>
@@ -622,12 +657,39 @@ export default function Dashboard() {
 
           {/* Sunday School */}
           <Section id="school" title="Sunday School" icon={Icon.book}
-            subtitle="The Zuhr prayer time held during Sunday school. Shown on the Prayers, School, and Calendar pages.">
-            <Field label="Sunday Zuhr Time">
-              <input type="text" value={content.sundaySchool?.zuhr ?? ""}
-                onChange={e => setContent(c => c ? { ...c, sundaySchool: { zuhr: e.target.value } } : c)}
-                placeholder="12:30 PM" />
-            </Field>
+            subtitle="The school year, the two admissions date tables on the School page, and the prayer times held during the school session.">
+            <Grid cols={3}>
+              <Field label="School Year">
+                <input type="text" value={content.sundaySchool?.year ?? ""}
+                  onChange={e => setSchool("year", e.target.value)}
+                  placeholder="2026–27" />
+              </Field>
+              <Field label="Zuhr (end of morning)">
+                <input type="text" value={content.sundaySchool?.zuhr ?? ""}
+                  onChange={e => setSchool("zuhr", e.target.value)}
+                  placeholder="1:15 PM" />
+              </Field>
+              <Field label="Asr (end of afternoon)">
+                <input type="text" value={content.sundaySchool?.asr ?? ""}
+                  onChange={e => setSchool("asr", e.target.value)}
+                  placeholder="4:45 PM" />
+              </Field>
+            </Grid>
+
+            <SchoolDateList
+              label="Key Dates: Existing Families"
+              rows={content.sundaySchool?.existingDates ?? []}
+              onChange={(i, f, v) => updateSchoolDate("existingDates", i, f, v)}
+              onAdd={() => addSchoolDate("existingDates")}
+              onRemove={i => removeSchoolDate("existingDates", i)}
+            />
+            <SchoolDateList
+              label="Key Dates: New Families"
+              rows={content.sundaySchool?.newDates ?? []}
+              onChange={(i, f, v) => updateSchoolDate("newDates", i, f, v)}
+              onAdd={() => addSchoolDate("newDates")}
+              onRemove={i => removeSchoolDate("newDates", i)}
+            />
           </Section>
 
           {/* Contact & Social */}
@@ -693,6 +755,59 @@ function Section({ id, title, icon, subtitle, children }: {
       </div>
       {subtitle && <p style={{ fontSize: ".84rem", color: "var(--gray-500)", marginBottom: "1.4rem", lineHeight: 1.55 }}>{subtitle}</p>}
       {children}
+    </div>
+  );
+}
+
+/**
+ * One of the School page's two admissions tables. Rows are printed in the order
+ * they sit here, so reordering in the portal reorders them on the site.
+ */
+function SchoolDateList({ label, rows, onChange, onAdd, onRemove }: {
+  label: string;
+  rows: SchoolDate[];
+  onChange: (i: number, field: keyof SchoolDate, value: string) => void;
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+}) {
+  return (
+    <div style={{ marginTop: "1.5rem" }}>
+      <Divider label={label} />
+      {rows.length === 0 && (
+        <p style={{ fontSize: ".88rem", color: "var(--gray-500)", margin: ".75rem 0" }}>
+          No dates listed. The School page will say the dates for the coming year
+          have not been announced yet.
+        </p>
+      )}
+      {rows.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: ".75rem", alignItems: "flex-end", marginBottom: ".6rem" }}>
+          <Field label={i === 0 ? "When" : ""} style={{ flex: "0 0 170px" }}>
+            <input type="text" value={r.when}
+              onChange={e => onChange(i, "when", e.target.value)}
+              placeholder="May 15, 2026" />
+          </Field>
+          <Field label={i === 0 ? "What happens" : ""} style={{ flex: 1 }}>
+            <input type="text" value={r.what}
+              onChange={e => onChange(i, "what", e.target.value)}
+              placeholder="Deadline to register without late fee" />
+          </Field>
+          <button onClick={() => onRemove(i)} title="Remove"
+            style={{
+              background: "transparent", border: "none", color: "var(--gray-300)",
+              cursor: "pointer", padding: ".55rem .2rem", lineHeight: 0, transition: "color .15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--red)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--gray-300)"; }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      ))}
+      <button onClick={onAdd} className="btn btn-ghost" style={{ width: "100%", gap: ".4rem", marginTop: ".25rem" }}>
+        {Icon.plus} Add Date
+      </button>
     </div>
   );
 }

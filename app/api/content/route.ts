@@ -38,7 +38,13 @@ const DEV_MOCK = {
     events: [],
     youthEvents: [],
     announcement: { show: false, text: "" },
-    sundaySchool: { zuhr: "12:30 PM" },
+    sundaySchool: {
+      year: "2026\u201327",
+      zuhr: "1:15 PM",
+      asr: "4:45 PM",
+      existingDates: [],
+      newDates: [],
+    },
     contact: {
       email: "webmaster@icbwayland.org",
       facebook: "https://www.facebook.com/icbwayland",
