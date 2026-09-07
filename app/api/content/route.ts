@@ -44,6 +44,17 @@ const DEV_MOCK = {
       asr: "4:45 PM",
       existingDates: [],
       newDates: [],
+      parentPortalUrl: "https://sunweb.us/?s=icbwaylandss",
+      teacherPortalUrl: "https://sunweb.us/admin/admin-login?s=icbwaylandss",
+    },
+    youth: {
+      registrationTitle: "2026\u20132027 Registration",
+      registrationBody: "Sign up for the ICB Wayland Youth Group for this school year.",
+      registerUrl: "",
+      honorCodeUrl: "",
+      instagramHandle: "@icbwayland.yg",
+      instagramUrl: "https://www.instagram.com/icbwayland.yg/",
+      linktreeUrl: "https://linktr.ee/icbyg",
     },
     contact: {
       email: "webmaster@icbwayland.org",
