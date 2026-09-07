@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+import { scopesFromToken } from "../../../lib/scopes";
 
 function validToken(req: Request) {
   const auth = req.headers.get("Authorization") ?? "";
-  const token = auth.replace("Bearer ", "").trim();
-  const expected = crypto
-    .createHmac("sha256", process.env.ADMIN_PASSWORD ?? "")
-    .update("icb-admin-v1")
-    .digest("hex");
-  return token === expected;
+  // Any portal token may read the whole file. Reading is not the risk here;
+  // writing is, and publish restricts that by scope.
+  return scopesFromToken(auth.replace("Bearer ", "").trim()) !== null;
 }
 
 const REPO = process.env.GITHUB_REPO ?? "";

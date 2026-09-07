@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PORTALS, Icon } from "../portal";
 
@@ -16,10 +16,15 @@ const ICONS: Record<string, React.ReactNode> = {
  */
 export default function PortalChooser() {
   const router = useRouter();
+  const [scopes, setScopes] = useState<string[] | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("icb_token")) router.push("/");
+    if (!localStorage.getItem("icb_token")) { router.push("/"); return; }
+    setScopes((localStorage.getItem("icb_scopes") ?? "").split(",").filter(Boolean));
   }, [router]);
+
+  if (scopes === null) return null;
+  const visible = scopes.length ? PORTALS.filter(p => scopes.includes(p.id)) : PORTALS;
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--gray-50)", padding: "4rem 2rem" }}>
@@ -41,7 +46,7 @@ export default function PortalChooser() {
         </div>
 
         <div style={{ display: "grid", gap: "1rem" }}>
-          {PORTALS.map(p => (
+          {visible.map(p => (
             <a
               key={p.id}
               href={p.href}

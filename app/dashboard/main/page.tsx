@@ -1,7 +1,7 @@
 "use client";
 import {
   Prayers, Event, Khateeb, BLANK_EVENT, BLANK_KHATEEB,
-  Icon, Section, Grid, Field, Divider, PortalShell, PortalLoading,
+  Icon, Section, Grid, Field, Divider, FlyerField, PortalShell, PortalLoading,
   usePortal, isUpcoming, shortDate,
 } from "../../portal";
 
@@ -255,6 +255,13 @@ export default function MainPortal() {
               <Field label="Details" style={{ marginTop: ".75rem" }}>
                 <input value={ev.meta} onChange={e => updateEvent(i, "meta", e.target.value)} placeholder="Saturday · 10:00 AM · Open to all" />
               </Field>
+
+                <FlyerField
+                  value={ev.image}
+                  alt={ev.imageAlt}
+                  onChange={v => updateEvent(i, "image", v)}
+                  onAltChange={v => updateEvent(i, "imageAlt", v)}
+                />
 
               {/* Row 4: date + category side by side */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem", marginTop: ".75rem" }}>

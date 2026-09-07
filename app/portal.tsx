@@ -22,8 +22,8 @@ export type Prayers = {
 // `date` is an ISO yyyy-mm-dd string. The website derives the month/day badge
 // from it and hides anything already past, so an event that is not removed
 // here simply stops showing instead of sitting on the homepage as "upcoming".
-export type Event = { date: string; featured: boolean; tag: string; title: string; meta: string; };
-export type YouthEvent = { date: string; title: string; tag?: string; meta?: string; signupUrl?: string; };
+export type Event = { date: string; featured: boolean; tag: string; title: string; meta: string; image?: string; imageAlt?: string; };
+export type YouthEvent = { date: string; title: string; tag?: string; meta?: string; signupUrl?: string; image?: string; imageAlt?: string; };
 export type Khateeb = { date: string; name: string };
 // Free text rather than an ISO date: the school publishes ranges like
 // "Jul 1-Aug 15, 2026" alongside single days, and these are printed as
@@ -48,8 +48,8 @@ export type Content = {
   siteUpdated?: string;
 };
 
-export const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "", meta: "" };
-export const BLANK_YOUTH_EVENT: YouthEvent = { date: "", title: "", tag: "", meta: "", signupUrl: "" };
+export const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "", meta: "", image: "", imageAlt: "" };
+export const BLANK_YOUTH_EVENT: YouthEvent = { date: "", title: "", tag: "", meta: "", signupUrl: "", image: "", imageAlt: "" };
 export const BLANK_KHATEEB: Khateeb = { date: "", name: "" };
 export const BLANK_SCHOOL_DATE: SchoolDate = { when: "", what: "" };
 
@@ -150,7 +150,11 @@ export function usePortal() {
     setSaving(false);
   }
 
-  function logout() { localStorage.removeItem("icb_token"); router.push("/"); }
+  function logout() {
+    localStorage.removeItem("icb_token");
+    localStorage.removeItem("icb_scopes");
+    router.push("/");
+  }
 
   return { content, setContent, sha, isMock, loading, saving, toast, publish, logout };
 }
@@ -270,6 +274,60 @@ export function Divider({ label }: { label: string }) {
  * The frame every portal shares: portal switcher, in-page section links, and
  * the publish button. `sections` are anchors within the current portal.
  */
+
+/**
+ * Flyer for an event. Takes a URL rather than an upload: the website is a set
+ * of files in a GitHub repo with no image store behind it, so the honest
+ * options are a path to a file already committed under /images, or a link to
+ * one hosted elsewhere. The preview is the check that the URL actually works.
+ */
+export function FlyerField({ value, alt, onChange, onAltChange }: {
+  value?: string;
+  alt?: string;
+  onChange: (v: string) => void;
+  onAltChange: (v: string) => void;
+}) {
+  const url = (value ?? "").trim();
+  const usable = /^https?:\/\//i.test(url) || /^\/[^/]/.test(url);
+  return (
+    <div style={{ marginTop: ".85rem" }}>
+      <Field label="Flyer image (optional)">
+        <input type="text" value={value ?? ""}
+          onChange={e => onChange(e.target.value)}
+          placeholder="/images/flyer-sep-18.jpg  or  https://..." />
+      </Field>
+      {url && !usable && (
+        <p style={{ fontSize: ".8rem", color: "var(--red)", marginTop: ".4rem" }}>
+          That will not load. Use a path starting with a single slash
+          (/images/…) or a full https:// address.
+        </p>
+      )}
+      {url && usable && (
+        <>
+          <Field label="Describe the flyer (for screen readers)" style={{ marginTop: ".85rem" }}>
+            <input type="text" value={alt ?? ""}
+              onChange={e => onAltChange(e.target.value)}
+              placeholder="Flyer for the Sept 18 talk, with the time and venue" />
+          </Field>
+          <div style={{
+            marginTop: ".7rem", padding: ".6rem", background: "var(--gray-50)",
+            border: "1px solid var(--gray-200)", borderRadius: 8,
+          }}>
+            <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".07em",
+                          textTransform: "uppercase", color: "var(--gray-500)", marginBottom: ".45rem" }}>
+              Preview
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" style={{ maxWidth: 180, height: "auto", display: "block", borderRadius: 6 }}
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              onLoad={e => { (e.currentTarget as HTMLImageElement).style.display = "block"; }} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function PortalShell({ portal, sections, saving, isMock, toast, onPublish, onLogout, children }: {
   portal: string;
   sections: { label: string; href: string; icon: React.ReactNode }[];
@@ -281,6 +339,13 @@ export function PortalShell({ portal, sections, saving, isMock, toast, onPublish
   children: React.ReactNode;
 }) {
   const current = PORTALS.find(p => p.id === portal);
+  // Only offer the portals this password opens. The server enforces this too;
+  // hiding them here just avoids showing a door that will not open.
+  const [allowed, setAllowed] = useState<string[]>([]);
+  useEffect(() => {
+    setAllowed((localStorage.getItem("icb_scopes") ?? "").split(",").filter(Boolean));
+  }, []);
+  const visible = allowed.length ? PORTALS.filter(p => allowed.includes(p.id)) : PORTALS;
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <aside style={{
@@ -301,12 +366,12 @@ export function PortalShell({ portal, sections, saving, isMock, toast, onPublish
         </div>
 
         {/* Portal switcher. Named so it is obvious which website each one edits. */}
-        <div style={{ padding: ".9rem .75rem .5rem" }}>
+        <div style={{ padding: ".9rem .75rem .5rem", display: visible.length > 1 ? "block" : "none" }}>
           <div style={{
             fontSize: ".65rem", fontWeight: 700, letterSpacing: ".09em", textTransform: "uppercase",
             color: "rgba(255,255,255,.35)", padding: "0 .75rem .5rem",
           }}>Portals</div>
-          {PORTALS.map(p => {
+          {visible.map(p => {
             const active = p.id === portal;
             return (
               <a key={p.id} href={p.href} style={{

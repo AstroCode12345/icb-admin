@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+import { scopesFromToken, mergeScoped } from "../../../lib/scopes";
 
-function validToken(req: Request) {
+function scopesOf(req: Request) {
   const auth = req.headers.get("Authorization") ?? "";
-  const token = auth.replace("Bearer ", "").trim();
-  const expected = crypto
-    .createHmac("sha256", process.env.ADMIN_PASSWORD ?? "")
-    .update("icb-admin-v1")
-    .digest("hex");
-  return token === expected;
+  return scopesFromToken(auth.replace("Bearer ", "").trim());
 }
 
 const REPO = process.env.GITHUB_REPO ?? "";
@@ -17,7 +12,8 @@ const API  = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
 
 // POST — write updated content.json back to GitHub
 export async function POST(req: Request) {
-  if (!validToken(req)) {
+  const scopes = scopesOf(req);
+  if (!scopes) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,17 +29,32 @@ export async function POST(req: Request) {
     }, { status: 400 });
   }
 
-  // Stamp the publish date so the site footer reflects when content actually
-  // changed, rather than a date somebody has to remember to type by hand.
-  const stamped = {
-    ...content,
-    siteUpdated: new Date().toISOString().slice(0, 10),
-  };
+  // Re-read what is live and let this token overwrite only the keys its portals
+  // own. A portal password must not be able to publish a whole content file:
+  // otherwise the Youth password could replace the Iqamah times. This also
+  // means two people editing different portals cannot clobber each other.
+  const current = await fetch(API, {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github.v3+json",
+    },
+    cache: "no-store",
+  });
+  if (!current.ok) {
+    return NextResponse.json({ error: "Could not read current content" }, { status: 502 });
+  }
+  const currentJson = await current.json();
+  const live = JSON.parse(Buffer.from(currentJson.content, "base64").toString("utf8"));
+
+  // Publish against the sha we just read, not one the browser has been holding,
+  // so a stale tab cannot overwrite a newer publish.
+  const stamped = mergeScoped(live, content ?? {}, scopes);
+  const writeSha = currentJson.sha;
 
   const body = JSON.stringify({
     message: "Update site content via ICB Admin",
     content: Buffer.from(JSON.stringify(stamped, null, 2)).toString("base64"),
-    sha,
+    sha: writeSha,
   });
 
   const res = await fetch(API, {

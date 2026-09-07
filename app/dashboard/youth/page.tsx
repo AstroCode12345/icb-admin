@@ -1,7 +1,7 @@
 "use client";
 import {
   Youth, YouthEvent, BLANK_YOUTH_EVENT,
-  Icon, Section, Grid, Field, Divider, PortalShell, PortalLoading,
+  Icon, Section, Grid, Field, Divider, FlyerField, PortalShell, PortalLoading,
   usePortal, isUpcoming, shortDate,
 } from "../../portal";
 
@@ -125,6 +125,13 @@ export default function YouthPortal() {
                   <input value={ev.signupUrl ?? ""} onChange={e => updateYouthEvent(i, "signupUrl", e.target.value)}
                     placeholder="https://forms.gle/…" />
                 </Field>
+
+                <FlyerField
+                  value={ev.image}
+                  alt={ev.imageAlt}
+                  onChange={v => updateYouthEvent(i, "image", v)}
+                  onAltChange={v => updateYouthEvent(i, "imageAlt", v)}
+                />
               </div>
             );
           })}

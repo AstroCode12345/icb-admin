@@ -18,9 +18,12 @@ export default function LoginPage() {
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
-      const { token } = await res.json();
+      const { token, scopes } = await res.json();
       localStorage.setItem("icb_token", token);
-      router.push("/dashboard");
+      localStorage.setItem("icb_scopes", (scopes ?? []).join(","));
+      // A password that opens exactly one portal goes straight there; there is
+      // nothing to choose between.
+      router.push(scopes?.length === 1 ? `/dashboard/${scopes[0]}` : "/dashboard");
     } else {
       setError("Incorrect password. Please try again.");
       setLoading(false);
