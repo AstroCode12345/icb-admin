@@ -10,7 +10,7 @@ import {
  * the event list, the registration heading, and the four outside links.
  */
 export default function YouthPortal() {
-  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal();
+  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal("youth");
 
   function updateYouthEvent(i: number, field: keyof YouthEvent, value: string) {
     setContent(c => {

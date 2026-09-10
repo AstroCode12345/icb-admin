@@ -9,7 +9,7 @@ import {
  * turn over annually; the SunWeb links change when the school moves systems.
  */
 export default function SchoolPortal() {
-  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal();
+  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal("school");
 
   type DateList = "existingDates" | "newDates";
 

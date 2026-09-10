@@ -10,7 +10,7 @@ import {
  * rather than on the School or Youth pages.
  */
 export default function MainPortal() {
-  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal();
+  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal("main");
 
   function setPrayer(key: keyof Omit<Prayers, "jumuah" | "lastUpdated">, val: string) {
     setContent(c => c ? { ...c, prayers: { ...c.prayers, [key]: val } } : c);

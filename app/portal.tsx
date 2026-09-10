@@ -102,7 +102,7 @@ export const Icon = {
  * Loads content.json, tracks edits, and publishes. Every portal calls this,
  * so they all read and write the same file and cannot drift apart.
  */
-export function usePortal() {
+export function usePortal(requiredScope?: string) {
   const router = useRouter();
   const [content, setContent] = useState<Content | null>(null);
   const [sha, setSha]         = useState<string>("");
@@ -127,8 +127,15 @@ export function usePortal() {
 
   useEffect(() => {
     if (!token) { router.push("/"); return; }
+    // Publishing is already restricted by scope on the server, but without this
+    // a youth-only login could open the School editor, type changes and get a
+    // success message while nothing actually changed.
+    if (requiredScope && !localScopes().includes(requiredScope)) {
+      router.replace("/dashboard");
+      return;
+    }
     loadContent();
-  }, [token, router, loadContent]);
+  }, [token, router, loadContent, requiredScope]);
 
   function showToast(msg: string, type: "success" | "error") {
     setToast({ msg, type });
@@ -159,6 +166,20 @@ export function usePortal() {
   }
 
   return { content, setContent, sha, isMock, repo, loading, saving, toast, publish, logout };
+}
+
+/**
+ * Scopes this browser's token carries. Read from the token rather than a
+ * separate localStorage key: the token is "<scopes>.<signature>", so anyone who
+ * edits the scope list to widen it breaks the signature and the server rejects
+ * the whole token. A separate key could be edited freely.
+ */
+export function localScopes(): string[] {
+  if (typeof window === "undefined") return [];
+  const t = localStorage.getItem("icb_token") ?? "";
+  const dot = t.lastIndexOf(".");
+  if (dot < 1) return [];
+  return t.slice(0, dot).split(",").filter(Boolean);
 }
 
 /** The three portals, in the order they appear in the sidebar. */
@@ -345,10 +366,8 @@ export function PortalShell({ portal, sections, saving, isMock, repo, toast, onP
   // Only offer the portals this password opens. The server enforces this too;
   // hiding them here just avoids showing a door that will not open.
   const [allowed, setAllowed] = useState<string[]>([]);
-  useEffect(() => {
-    setAllowed((localStorage.getItem("icb_scopes") ?? "").split(",").filter(Boolean));
-  }, []);
-  const visible = allowed.length ? PORTALS.filter(p => allowed.includes(p.id)) : PORTALS;
+  useEffect(() => { setAllowed(localScopes()); }, []);
+  const visible = PORTALS.filter(p => allowed.includes(p.id));
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <aside style={{
