@@ -8,9 +8,18 @@ function validToken(req: Request) {
   return scopesFromToken(auth.replace("Bearer ", "").trim()) !== null;
 }
 
-const REPO = process.env.GITHUB_REPO ?? "";
 const FILE = "content.json";
-const API  = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
+
+// Read the repo per request, not once at module load. Next reloads .env.local
+// in dev, but a module-level `const API = ...` keeps whatever the value was
+// when the file was first imported. That is how three publishes went to the
+// old repo after GITHUB_REPO had already been corrected on disk.
+function repo() {
+  return process.env.GITHUB_REPO ?? "";
+}
+function apiUrl() {
+  return `https://api.github.com/repos/${repo()}/contents/${FILE}`;
+}
 
 // Sample data for local development only, returned when there is no real
 // GitHub token to read the live file with. It is flagged `mock: true` so the
@@ -65,7 +74,7 @@ const DEV_MOCK = {
 
 function usingMockData() {
   const token = process.env.GITHUB_TOKEN ?? "";
-  return !token || token.startsWith("ghp_xxx") || !REPO;
+  return !token || token.startsWith("ghp_xxx") || !repo();
 }
 
 // GET — fetch current content.json from GitHub
@@ -79,7 +88,7 @@ export async function GET(req: Request) {
     return NextResponse.json(DEV_MOCK);
   }
 
-  const res = await fetch(API, {
+  const res = await fetch(apiUrl(), {
     headers: {
       Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
       Accept: "application/vnd.github.v3+json",
@@ -97,5 +106,5 @@ export async function GET(req: Request) {
   // Send the repo back so the portal can show where it publishes. A wrong
   // GITHUB_REPO is otherwise invisible until someone notices the website did
   // not change, which is exactly how three publishes went to the wrong repo.
-  return NextResponse.json({ content, sha: data.sha, mock: false, repo: REPO });
+  return NextResponse.json({ content, sha: data.sha, mock: false, repo: repo() });
 }

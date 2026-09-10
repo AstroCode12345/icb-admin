@@ -6,9 +6,18 @@ function scopesOf(req: Request) {
   return scopesFromToken(auth.replace("Bearer ", "").trim());
 }
 
-const REPO = process.env.GITHUB_REPO ?? "";
 const FILE = "content.json";
-const API  = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
+
+// Read the repo per request, not once at module load. Next reloads .env.local
+// in dev, but a module-level `const API = ...` keeps whatever the value was
+// when the file was first imported. That is how three publishes went to the
+// old repo after GITHUB_REPO had already been corrected on disk.
+function repo() {
+  return process.env.GITHUB_REPO ?? "";
+}
+function apiUrl() {
+  return `https://api.github.com/repos/${repo()}/contents/${FILE}`;
+}
 
 // POST — write updated content.json back to GitHub
 export async function POST(req: Request) {
@@ -22,7 +31,7 @@ export async function POST(req: Request) {
   // Refuse to write when the app is running on the development stub. Without
   // this the request goes to GitHub with a placeholder sha and fails with a
   // confusing API error instead of saying what is actually wrong.
-  if (!process.env.GITHUB_TOKEN || !REPO || sha === "dev-sha") {
+  if (!process.env.GITHUB_TOKEN || !repo() || sha === "dev-sha") {
     return NextResponse.json({
       error: "Not connected to the website repository, so nothing was published. " +
              "Set GITHUB_TOKEN and GITHUB_REPO to publish for real.",
@@ -33,7 +42,7 @@ export async function POST(req: Request) {
   // own. A portal password must not be able to publish a whole content file:
   // otherwise the Youth password could replace the Iqamah times. This also
   // means two people editing different portals cannot clobber each other.
-  const current = await fetch(API, {
+  const current = await fetch(apiUrl(), {
     headers: {
       Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
       Accept: "application/vnd.github.v3+json",
@@ -57,7 +66,7 @@ export async function POST(req: Request) {
     sha: writeSha,
   });
 
-  const res = await fetch(API, {
+  const res = await fetch(apiUrl(), {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
