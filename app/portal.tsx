@@ -107,6 +107,7 @@ export function usePortal() {
   const [content, setContent] = useState<Content | null>(null);
   const [sha, setSha]         = useState<string>("");
   const [isMock, setIsMock]   = useState(false);
+  const [repo, setRepo]       = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [toast, setToast]     = useState<{ msg: string; type: "success" | "error" } | null>(null);
@@ -120,6 +121,7 @@ export function usePortal() {
     setContent(data.content);
     setSha(data.sha);
     setIsMock(Boolean(data.mock));
+    setRepo(data.repo ?? "");
     setLoading(false);
   }, [token, router]);
 
@@ -156,7 +158,7 @@ export function usePortal() {
     router.push("/");
   }
 
-  return { content, setContent, sha, isMock, loading, saving, toast, publish, logout };
+  return { content, setContent, sha, isMock, repo, loading, saving, toast, publish, logout };
 }
 
 /** The three portals, in the order they appear in the sidebar. */
@@ -328,11 +330,12 @@ export function FlyerField({ value, alt, onChange, onAltChange }: {
   );
 }
 
-export function PortalShell({ portal, sections, saving, isMock, toast, onPublish, onLogout, children }: {
+export function PortalShell({ portal, sections, saving, isMock, repo, toast, onPublish, onLogout, children }: {
   portal: string;
   sections: { label: string; href: string; icon: React.ReactNode }[];
   saving: boolean;
   isMock: boolean;
+  repo?: string;
   toast: { msg: string; type: "success" | "error" } | null;
   onPublish: () => void;
   onLogout: () => void;
@@ -414,7 +417,11 @@ export function PortalShell({ portal, sections, saving, isMock, toast, onPublish
           padding: "0 2rem", position: "sticky", top: 0, zIndex: 9,
         }}>
           <span style={{ fontSize: ".88rem", color: "var(--gray-500)", fontWeight: 500 }}>
-            Editing {current?.label ?? "the website"}. Changes publish to the live site.
+            Editing {current?.label ?? "the website"}. Publishing to{" "}
+            <code style={{
+              fontSize: ".82rem", background: "var(--gray-100)", padding: ".12rem .4rem",
+              borderRadius: 5, color: "var(--gray-900)",
+            }}>{repo || "…"}</code>
           </span>
           <button onClick={onPublish} className="btn btn-primary" disabled={saving}
             style={{ gap: ".45rem", padding: ".5rem 1rem", fontSize: ".85rem", borderRadius: 8 }}>

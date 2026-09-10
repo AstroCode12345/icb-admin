@@ -9,7 +9,7 @@ import {
  * turn over annually; the SunWeb links change when the school moves systems.
  */
 export default function SchoolPortal() {
-  const { content, setContent, isMock, loading, saving, toast, publish, logout } = usePortal();
+  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal();
 
   type DateList = "existingDates" | "newDates";
 
@@ -47,7 +47,7 @@ export default function SchoolPortal() {
         { label: "School Details", href: "#school",  icon: Icon.book },
         { label: "Portal Links",   href: "#portals", icon: Icon.mail },
       ]}
-      saving={saving} isMock={isMock} toast={toast}
+      saving={saving} isMock={isMock} repo={repo} toast={toast}
       onPublish={publish} onLogout={logout}
     >
         {/* Sunday School */}

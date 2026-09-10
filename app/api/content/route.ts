@@ -94,5 +94,8 @@ export async function GET(req: Request) {
 
   const data = await res.json();
   const content = JSON.parse(Buffer.from(data.content, "base64").toString("utf8"));
-  return NextResponse.json({ content, sha: data.sha, mock: false });
+  // Send the repo back so the portal can show where it publishes. A wrong
+  // GITHUB_REPO is otherwise invisible until someone notices the website did
+  // not change, which is exactly how three publishes went to the wrong repo.
+  return NextResponse.json({ content, sha: data.sha, mock: false, repo: REPO });
 }

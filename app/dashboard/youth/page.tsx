@@ -10,7 +10,7 @@ import {
  * the event list, the registration heading, and the four outside links.
  */
 export default function YouthPortal() {
-  const { content, setContent, isMock, loading, saving, toast, publish, logout } = usePortal();
+  const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal();
 
   function updateYouthEvent(i: number, field: keyof YouthEvent, value: string) {
     setContent(c => {
@@ -44,7 +44,7 @@ export default function YouthPortal() {
         { label: "Registration",  href: "#registration", icon: Icon.book },
         { label: "Group Links",   href: "#links",        icon: Icon.mail },
       ]}
-      saving={saving} isMock={isMock} toast={toast}
+      saving={saving} isMock={isMock} repo={repo} toast={toast}
       onPublish={publish} onLogout={logout}
     >
         {/* Youth Events */}
