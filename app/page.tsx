@@ -25,7 +25,7 @@ export default function LoginPage() {
       // nothing to choose between.
       router.push(scopes?.length === 1 ? `/dashboard/${scopes[0]}` : "/dashboard");
     } else {
-      setError("Incorrect password. Please try again.");
+      setError("That password does not open any portal. Check you are using the password for the section you want to edit.");
       setLoading(false);
     }
   }
@@ -59,7 +59,7 @@ export default function LoginPage() {
             ICB Wayland
           </h1>
           <p style={{ color: "rgba(255,255,255,.6)", fontSize: ".9rem", lineHeight: 1.65 }}>
-            Website Admin Portal. Sign in to update prayer times, events, and announcements.
+            Website admin. Sign in with your portal password to update prayer times, events, school details or the youth page.
           </p>
         </div>
         <p style={{ fontSize: ".75rem", color: "rgba(255,255,255,.3)" }}>
@@ -72,7 +72,7 @@ export default function LoginPage() {
         <div style={{ width: "100%", maxWidth: 340 }}>
           <h2 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: ".4rem" }}>Sign in</h2>
           <p style={{ color: "var(--gray-500)", fontSize: ".9rem", marginBottom: "2rem" }}>
-            Enter the admin password to continue.
+            Each portal has its own password. Yours opens the part of the website you look after.
           </p>
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: "1.25rem" }}>

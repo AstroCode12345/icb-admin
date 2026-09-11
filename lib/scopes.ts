@@ -58,20 +58,24 @@ export function scopesFromToken(token: string | null | undefined): Scope[] | nul
 }
 
 /**
- * Which portals a password opens. ADMIN_PASSWORD is the master and opens all
- * three, so the site admin keeps one password rather than three. A portal
- * password with no env var set simply never matches.
+ * Which portals a password opens. Each portal requires its own password; there
+ * is no master. ADMIN_PASSWORD stands in only for portals that have no password
+ * of their own yet.
  */
 export function scopesForPassword(password: string): Scope[] {
   if (!password) return [];
   const admin = process.env.ADMIN_PASSWORD;
-  if (admin && safeEqual(password, admin)) return [...SCOPES];
 
-  const matched = SCOPES.filter(s => {
-    const expected = process.env[ENV_VAR[s]];
-    return expected ? safeEqual(password, expected) : false;
+  return SCOPES.filter(s => {
+    const own = process.env[ENV_VAR[s]];
+    // A portal with its own password requires that password. ADMIN_PASSWORD is
+    // only a fallback for a portal that has not been given one yet, so the app
+    // still works before all three are configured. It is deliberately not a
+    // skeleton key: knowing the admin password should not open a portal whose
+    // own password you were never given.
+    if (own) return safeEqual(password, own);
+    return admin ? safeEqual(password, admin) : false;
   });
-  return matched;
 }
 
 function safeEqual(a: string, b: string) {

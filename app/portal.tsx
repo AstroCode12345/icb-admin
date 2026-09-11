@@ -310,21 +310,92 @@ export function FlyerField({ value, alt, onChange, onAltChange }: {
   onChange: (v: string) => void;
   onAltChange: (v: string) => void;
 }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
   const url = (value ?? "").trim();
   const usable = /^https?:\/\//i.test(url) || /^\/[^/]/.test(url);
+
+  async function upload(file: File) {
+    setErr("");
+    setBusy(true);
+    try {
+      const data: string = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result));
+        r.onerror = () => rej(new Error("Could not read that file."));
+        r.readAsDataURL(file);
+      });
+      const token = localStorage.getItem("icb_token") ?? "";
+      const resp = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ filename: file.name, contentType: file.type, data }),
+      });
+      const out = await resp.json();
+      if (!resp.ok) { setErr(out.error ?? "Upload failed."); return; }
+      onChange(out.path);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{ marginTop: ".85rem" }}>
-      <Field label="Flyer image (optional)">
-        <input type="text" value={value ?? ""}
-          onChange={e => onChange(e.target.value)}
-          placeholder="/images/flyer-sep-18.jpg  or  https://..." />
-      </Field>
-      {url && !usable && (
+      <label style={{
+        display: "block", fontSize: ".78rem", fontWeight: 600,
+        color: "var(--gray-700)", marginBottom: ".35rem",
+      }}>
+        Flyer image (optional)
+      </label>
+
+      <div style={{ display: "flex", gap: ".6rem", alignItems: "center", flexWrap: "wrap" }}>
+        <label className="btn btn-ghost" style={{
+          fontSize: ".85rem", padding: ".5rem .9rem", cursor: busy ? "wait" : "pointer",
+          opacity: busy ? .6 : 1,
+        }}>
+          {busy ? "Uploading…" : "Choose image…"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            disabled={busy}
+            style={{ display: "none" }}
+            onChange={e => {
+              const f = e.target.files?.[0];
+              // Clear the input so picking the same file twice still fires.
+              e.target.value = "";
+              if (f) upload(f);
+            }}
+          />
+        </label>
+        {url && (
+          <button onClick={() => { onChange(""); onAltChange(""); setErr(""); }}
+            className="btn btn-ghost" style={{ fontSize: ".85rem", padding: ".5rem .9rem" }}>
+            Remove
+          </button>
+        )}
+      </div>
+
+      <p style={{ fontSize: ".78rem", color: "var(--gray-500)", margin: ".5rem 0 .35rem" }}>
+        JPG, PNG, WebP or GIF, up to 4MB. Uploading saves the image to the website,
+        which takes about a minute to appear. You can also paste a link instead.
+      </p>
+
+      <input type="text" value={value ?? ""}
+        onChange={e => onChange(e.target.value)}
+        placeholder="/images/events/flyer.jpg  or  https://..." />
+
+      {err && (
+        <p style={{ fontSize: ".8rem", color: "var(--red)", marginTop: ".4rem" }}>{err}</p>
+      )}
+      {url && !usable && !err && (
         <p style={{ fontSize: ".8rem", color: "var(--red)", marginTop: ".4rem" }}>
           That will not load. Use a path starting with a single slash
           (/images/…) or a full https:// address.
         </p>
       )}
+
       {url && usable && (
         <>
           <Field label="Describe the flyer (for screen readers)" style={{ marginTop: ".85rem" }}>
@@ -344,6 +415,10 @@ export function FlyerField({ value, alt, onChange, onAltChange }: {
             <img src={url} alt="" style={{ maxWidth: 180, height: "auto", display: "block", borderRadius: 6 }}
               onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               onLoad={e => { (e.currentTarget as HTMLImageElement).style.display = "block"; }} />
+            <p style={{ fontSize: ".72rem", color: "var(--gray-500)", marginTop: ".4rem" }}>
+              A just-uploaded image shows here only after the website finishes
+              rebuilding.
+            </p>
           </div>
         </>
       )}
