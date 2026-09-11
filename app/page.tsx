@@ -18,14 +18,12 @@ export default function LoginPage() {
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
-      const { token, scopes } = await res.json();
+      const { token } = await res.json();
       localStorage.setItem("icb_token", token);
-      localStorage.setItem("icb_scopes", (scopes ?? []).join(","));
-      // A password that opens exactly one portal goes straight there; there is
-      // nothing to choose between.
-      router.push(scopes?.length === 1 ? `/dashboard/${scopes[0]}` : "/dashboard");
+      // This is the front door only. The chooser asks for the section password.
+      router.push("/dashboard");
     } else {
-      setError("That password does not open any portal. Check you are using the password for the section you want to edit.");
+      setError("Incorrect password. Please try again.");
       setLoading(false);
     }
   }
@@ -59,7 +57,7 @@ export default function LoginPage() {
             ICB Wayland
           </h1>
           <p style={{ color: "rgba(255,255,255,.6)", fontSize: ".9rem", lineHeight: 1.65 }}>
-            Website admin. Sign in with your portal password to update prayer times, events, school details or the youth page.
+            Website admin. Sign in to choose a section, then enter that section&rsquo;s own password to edit it.
           </p>
         </div>
         <p style={{ fontSize: ".75rem", color: "rgba(255,255,255,.3)" }}>
@@ -72,7 +70,7 @@ export default function LoginPage() {
         <div style={{ width: "100%", maxWidth: 340 }}>
           <h2 style={{ fontSize: "1.3rem", fontWeight: 700, marginBottom: ".4rem" }}>Sign in</h2>
           <p style={{ color: "var(--gray-500)", fontSize: ".9rem", marginBottom: "2rem" }}>
-            Each portal has its own password. Yours opens the part of the website you look after.
+            Enter the shared ICB admin password to continue.
           </p>
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: "1.25rem" }}>

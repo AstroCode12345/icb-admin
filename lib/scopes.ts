@@ -10,19 +10,24 @@ import crypto from "crypto";
  * the one that matters. Without it a youth token could POST a whole content
  * file and quietly replace the Iqamah times.
  */
-export type Scope = "main" | "school" | "youth";
+export type Portal = "main" | "school" | "youth";
+export type Scope = Portal | "lobby";
 
-export const SCOPES: Scope[] = ["main", "school", "youth"];
+export const PORTAL_IDS: Portal[] = ["main", "school", "youth"];
+export const SCOPES: Portal[] = PORTAL_IDS;
 
 /** The content.json keys each portal owns. Anything else it sends is ignored. */
-export const SCOPE_KEYS: Record<Scope, string[]> = {
+export const SCOPE_KEYS: Record<string, string[]> = {
+  // "lobby" is the first key only. It gets you to the chooser and nothing else,
+  // so it owns no content and can publish nothing.
+  lobby: [],
   main: ["prayers", "khateebs", "announcement", "events", "contact", "donateUrl"],
   school: ["sundaySchool"],
   youth: ["youth", "youthEvents"],
 };
 
 /** Env var holding each portal's password. */
-const ENV_VAR: Record<Scope, string> = {
+const ENV_VAR: Record<Portal, string> = {
   main: "MAIN_PASSWORD",
   school: "SCHOOL_PASSWORD",
   youth: "YOUTH_PASSWORD",
@@ -47,7 +52,8 @@ export function scopesFromToken(token: string | null | undefined): Scope[] | nul
   const dot = token.lastIndexOf(".");
   if (dot < 1) return null;
   const list = token.slice(0, dot);
-  const scopes = list.split(",").filter(s => SCOPES.includes(s as Scope)) as Scope[];
+  const valid: Scope[] = [...PORTAL_IDS, "lobby"];
+  const scopes = list.split(",").filter(s => valid.includes(s as Scope)) as Scope[];
   if (!scopes.length || scopes.length !== list.split(",").length) return null;
   // Re-derive rather than compare strings, so a tampered scope list fails.
   const expected = tokenFor(scopes);
@@ -58,24 +64,26 @@ export function scopesFromToken(token: string | null | undefined): Scope[] | nul
 }
 
 /**
- * Which portals a password opens. Each portal requires its own password; there
- * is no master. ADMIN_PASSWORD stands in only for portals that have no password
- * of their own yet.
+ * Getting in takes two keys.
+ *
+ * The shared ADMIN_PASSWORD opens the front door and nothing else: you land on
+ * the chooser and can see which portals exist. Opening one then needs that
+ * portal's own password. So the shared password alone edits nothing, and a
+ * leaked portal password is no use without the shared one.
  */
-export function scopesForPassword(password: string): Scope[] {
-  if (!password) return [];
+export function isLobbyPassword(password: string): boolean {
   const admin = process.env.ADMIN_PASSWORD;
+  return Boolean(password && admin && safeEqual(password, admin));
+}
 
-  return SCOPES.filter(s => {
-    const own = process.env[ENV_VAR[s]];
-    // A portal with its own password requires that password. ADMIN_PASSWORD is
-    // only a fallback for a portal that has not been given one yet, so the app
-    // still works before all three are configured. It is deliberately not a
-    // skeleton key: knowing the admin password should not open a portal whose
-    // own password you were never given.
-    if (own) return safeEqual(password, own);
-    return admin ? safeEqual(password, admin) : false;
-  });
+/** Does this password open that particular portal? */
+export function isPortalPassword(password: string, portal: Portal): boolean {
+  if (!password || !PORTAL_IDS.includes(portal)) return false;
+  const own = process.env[ENV_VAR[portal]];
+  // A portal with no password of its own falls back to the shared one, so a
+  // half-configured install is reachable rather than locked.
+  if (!own) return isLobbyPassword(password);
+  return safeEqual(password, own);
 }
 
 function safeEqual(a: string, b: string) {
@@ -94,7 +102,7 @@ export function mergeScoped(
   incoming: Record<string, unknown>,
   scopes: Scope[],
 ) {
-  const allowed = new Set(scopes.flatMap(s => SCOPE_KEYS[s]));
+  const allowed = new Set(scopes.flatMap(s => SCOPE_KEYS[s] ?? []));
   const out: Record<string, unknown> = { ...live };
   for (const key of allowed) {
     if (key in incoming) out[key] = incoming[key];

@@ -131,7 +131,8 @@ export function usePortal(requiredScope?: string) {
     // a youth-only login could open the School editor, type changes and get a
     // success message while nothing actually changed.
     if (requiredScope && !localScopes().includes(requiredScope)) {
-      router.replace("/dashboard");
+      // Back to the chooser, which will ask for this portal's password.
+      router.replace(`/dashboard?unlock=${requiredScope}`);
       return;
     }
     loadContent();
