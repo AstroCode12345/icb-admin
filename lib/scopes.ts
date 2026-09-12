@@ -46,7 +46,21 @@ export function tokenFor(scopes: Scope[]) {
   return `${list}.${sig}`;
 }
 
-/** Scopes a token carries, or null if it is missing, malformed or unsigned. */
+/**
+ * Scopes a token carries, or null if it is missing, malformed, unsigned, or
+ * structurally impossible.
+ *
+ * The mint path (this file's auth route) never issues more than one real
+ * portal scope per token, by construction, so this rejects any token
+ * claiming otherwise as a fixed rule rather than trusting the mint path to
+ * stay correct forever. That matters because tokens are not versioned or
+ * expiring: an earlier iteration of this auth system minted a single
+ * ADMIN_PASSWORD login straight into `[main, school, youth]` (no lobby
+ * step existed yet), and any token from that era, still holding a valid
+ * signature under an unrotated secret, would otherwise still be honored
+ * today. This check would have caught it even without the secret rotation
+ * that accompanied this fix.
+ */
 export function scopesFromToken(token: string | null | undefined): Scope[] | null {
   if (!token || !secret()) return null;
   const dot = token.lastIndexOf(".");
@@ -55,6 +69,8 @@ export function scopesFromToken(token: string | null | undefined): Scope[] | nul
   const valid: Scope[] = [...PORTAL_IDS, "lobby"];
   const scopes = list.split(",").filter(s => valid.includes(s as Scope)) as Scope[];
   if (!scopes.length || scopes.length !== list.split(",").length) return null;
+  const realPortals = scopes.filter(s => s !== "lobby");
+  if (realPortals.length > 1) return null;
   // Re-derive rather than compare strings, so a tampered scope list fails.
   const expected = tokenFor(scopes);
   const a = Buffer.from(token);
