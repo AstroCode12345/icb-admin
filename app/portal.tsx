@@ -305,6 +305,106 @@ export function Divider({ label }: { label: string }) {
  * options are a path to a file already committed under /images, or a link to
  * one hosted elsewhere. The preview is the check that the URL actually works.
  */
+/**
+ * Shrink an uploaded flyer before it is sent.
+ *
+ * A poster straight off a phone or a design tool is far bigger than the site
+ * needs: the first real upload was a 2400x3000 PNG of 4MB, displayed in a
+ * 380px card, which is roughly three seconds of a visitor's mobile data for
+ * an image nobody asked to download. Resizing here rather than server-side
+ * keeps the Next app free of a native image dependency, and means the large
+ * original never crosses the network at all.
+ *
+ * MAX_EDGE is 1400: about four times the card width, so the poster is still
+ * crisp on a high-density screen and readable when opened full size, without
+ * carrying pixels no one will see.
+ */
+async function prepareImage(file: File): Promise<{
+  dataUrl: string; contentType: string; note: string;
+}> {
+  const MAX_EDGE = 1400;
+  const JPEG_QUALITY = 0.85;
+
+  const readAsDataUrl = (f: File) => new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result));
+    r.onerror = () => rej(new Error("Could not read that file."));
+    r.readAsDataURL(f);
+  });
+
+  const original = await readAsDataUrl(file);
+
+  // A GIF may be animated, and redrawing it through a canvas would silently
+  // flatten it to the first frame. Leave those alone.
+  if (file.type === "image/gif") {
+    return { dataUrl: original, contentType: file.type, note: "" };
+  }
+
+  const img = await new Promise<HTMLImageElement>((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error("That file could not be read as an image."));
+    i.src = original;
+  });
+
+  const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return { dataUrl: original, contentType: file.type, note: "" };
+  ctx.drawImage(img, 0, 0, w, h);
+
+  // Only keep PNG when the image actually uses transparency. Posters generally
+  // do not, and PNG is several times larger than JPEG for photographic art:
+  // the 4MB upload above was still 1.2MB as a resized PNG but 323KB as JPEG.
+  let transparent = false;
+  try {
+    const { data } = ctx.getImageData(0, 0, w, h);
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 255) { transparent = true; break; }
+    }
+  } catch {
+    // A cross-origin source would taint the canvas. Nothing here is
+    // cross-origin, but assume transparency rather than risk a black
+    // background if that ever changes.
+    transparent = true;
+  }
+
+  let contentType = "image/jpeg";
+  if (transparent) {
+    contentType = "image/png";
+  } else {
+    // JPEG has no alpha, so anything transparent would render black. The
+    // check above means that cannot happen, but paint white first so the
+    // result never depends on the canvas's initial state.
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  const dataUrl = canvas.toDataURL(contentType, JPEG_QUALITY);
+
+  // Fall back to the original if re-encoding somehow made it bigger, which
+  // can happen for an already-small or already-optimised file.
+  const sizeOf = (d: string) => Math.floor((d.split(",").pop() ?? "").length * 3 / 4);
+  if (sizeOf(dataUrl) >= sizeOf(original) && scale === 1) {
+    return { dataUrl: original, contentType: file.type, note: "" };
+  }
+
+  const kb = (n: number) => n > 1024 * 1024
+    ? `${(n / 1024 / 1024).toFixed(1)}MB`
+    : `${Math.round(n / 1024)}KB`;
+  const resized = scale < 1 ? `${img.width}x${img.height} to ${w}x${h}, ` : "";
+  const note = `Optimised: ${resized}${kb(sizeOf(original))} to ${kb(sizeOf(dataUrl))}.`;
+
+  return { dataUrl, contentType, note };
+}
+
 export function FlyerField({ value, alt, onChange, onAltChange }: {
   value?: string;
   alt?: string;
@@ -313,28 +413,30 @@ export function FlyerField({ value, alt, onChange, onAltChange }: {
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
   const url = (value ?? "").trim();
   const usable = /^https?:\/\//i.test(url) || /^\/[^/]/.test(url);
 
   async function upload(file: File) {
     setErr("");
+    setNote("");
     setBusy(true);
     try {
-      const data: string = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(String(r.result));
-        r.onerror = () => rej(new Error("Could not read that file."));
-        r.readAsDataURL(file);
-      });
+      const prepared = await prepareImage(file);
       const token = localStorage.getItem("icb_token") ?? "";
       const resp = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ filename: file.name, contentType: file.type, data }),
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: prepared.contentType,
+          data: prepared.dataUrl,
+        }),
       });
       const out = await resp.json();
       if (!resp.ok) { setErr(out.error ?? "Upload failed."); return; }
       onChange(out.path);
+      if (prepared.note) setNote(prepared.note);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Upload failed.");
     } finally {
@@ -371,7 +473,7 @@ export function FlyerField({ value, alt, onChange, onAltChange }: {
           />
         </label>
         {url && (
-          <button onClick={() => { onChange(""); onAltChange(""); setErr(""); }}
+          <button onClick={() => { onChange(""); onAltChange(""); setErr(""); setNote(""); }}
             className="btn btn-ghost" style={{ fontSize: ".85rem", padding: ".5rem .9rem" }}>
             Remove
           </button>
@@ -389,6 +491,11 @@ export function FlyerField({ value, alt, onChange, onAltChange }: {
 
       {err && (
         <p style={{ fontSize: ".8rem", color: "var(--red)", marginTop: ".4rem" }}>{err}</p>
+      )}
+      {note && !err && (
+        <p style={{ fontSize: ".8rem", color: "var(--green-700)", marginTop: ".4rem" }}>
+          {note} The full-size version people see when they click is this one.
+        </p>
       )}
       {url && !usable && !err && (
         <p style={{ fontSize: ".8rem", color: "var(--red)", marginTop: ".4rem" }}>
