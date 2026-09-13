@@ -21,7 +21,7 @@ export const SCOPE_KEYS: Record<string, string[]> = {
   // "lobby" is the first key only. It gets you to the chooser and nothing else,
   // so it owns no content and can publish nothing.
   lobby: [],
-  main: ["prayers", "khateebs", "announcement", "events", "contact", "donateUrl", "ramadan", "scholarship"],
+  main: ["prayers", "khateebs", "announcement", "events", "contact", "donateUrl", "ramadan", "scholarship", "membership"],
   school: ["sundaySchool"],
   youth: ["youth", "youthEvents"],
 };

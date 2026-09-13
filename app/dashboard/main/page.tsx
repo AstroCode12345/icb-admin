@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   Prayers, Event, Khateeb, Ramadan, SchoolDate,
   BLANK_EVENT, BLANK_KHATEEB, BLANK_RAMADAN, BLANK_SCHOOL_DATE,
+  Membership,
   Icon, Section, Grid, Field, Divider, FlyerField, SchoolDateList, PortalShell, PortalLoading,
   usePortal, isUpcoming, shortDate,
 } from "../../portal";
@@ -129,6 +130,7 @@ export default function MainPortal() {
         { label: "Donate Link",      href: "#donate",       icon: Icon.heart },
         { label: "Ramadan Page",     href: "#ramadan",      icon: Icon.calendar },
         { label: "Scholarship",      href: "#scholarship",  icon: Icon.book },
+        { label: "Membership Fees",  href: "#membership",   icon: Icon.users },
       ]}
       saving={saving} isMock={isMock} repo={repo} toast={toast}
       onPublish={publish} onLogout={logout}
@@ -523,6 +525,32 @@ export default function MainPortal() {
               onChange={e => setContent(c => c ? { ...c, scholarship: { ...(c.scholarship ?? {}), startYear: e.target.value } } : c)}
               placeholder="2027" />
           </Field>
+        </Section>
+
+        {/* Membership */}
+        <Section id="membership" title="Membership Fees" icon={Icon.users}
+          subtitle="The dollar amounts on the Membership page, both in the summary text and the renewal dropdown, plus the PayPal button behind the renewal form.">
+          <Grid cols={2}>
+            <Field label="Family Fee ($ USD)">
+              <input type="text" value={content.membership?.familyFee ?? ""}
+                onChange={e => setContent(c => c ? { ...c, membership: { ...(c.membership ?? {}), familyFee: e.target.value } } : c)}
+                placeholder="204.56" />
+            </Field>
+            <Field label="Single Fee ($ USD)">
+              <input type="text" value={content.membership?.singleFee ?? ""}
+                onChange={e => setContent(c => c ? { ...c, membership: { ...(c.membership ?? {}), singleFee: e.target.value } } : c)}
+                placeholder="102.53" />
+            </Field>
+          </Grid>
+          <Field label="PayPal Button ID" style={{ marginTop: ".85rem" }}>
+            <input type="text" value={content.membership?.paypalButtonId ?? ""}
+              onChange={e => setContent(c => c ? { ...c, membership: { ...(c.membership ?? {}), paypalButtonId: e.target.value } } : c)}
+              placeholder="VBNU2YYYNYDEL" />
+          </Field>
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            Found in PayPal under the button&rsquo;s own settings, not a password. Only change this if the
+            renewal button is recreated on PayPal&rsquo;s side.
+          </p>
         </Section>
 
     </PortalShell>
