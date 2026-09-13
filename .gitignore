@@ -10,6 +10,9 @@ build/
 .env.local
 .env*.local
 
+# Contains real portal passwords, never commit
+ADMIN-BRIEFING.md
+
 # Vercel
 .vercel
 

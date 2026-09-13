@@ -34,6 +34,27 @@ export type SundaySchool = {
   existingDates?: SchoolDate[]; newDates?: SchoolDate[];
   parentPortalUrl?: string; teacherPortalUrl?: string;
 };
+// A day's five Iqama times during Ramadan, fetched from the Aladhan
+// calculation API rather than typed in by hand — see the "Fetch Schedule"
+// button on the Ramadan section. `date` is an ISO yyyy-mm-dd string, same as
+// everything else that gets sorted or filtered by date on the site.
+export type RamadanDay = { date: string; fajr: string; dhuhr: string; asr: string; maghrib: string; isha: string };
+export type Ramadan = {
+  visible: boolean;
+  iqama?: { fajr: string; zuhr: string; asr: string; maghrib: string; isha: string };
+  khutbas?: SchoolDate[];
+  maximizingProgram?: SchoolDate[];
+  communityIftars?: SchoolDate[];
+  tarawihNote?: string;
+  lailatulQadrNote?: string;
+  lailatulQadrRegisterUrl?: string;
+  lailatulQadrFoodUrl?: string;
+  zakatFitrAmount?: string;
+  fidyahAmount?: string;
+  schedule?: RamadanDay[];
+};
+export type Scholarship = { startYear?: string };
+
 export type Content = {
   prayers: Prayers;
   khateebs?: Khateeb[];
@@ -46,12 +67,21 @@ export type Content = {
   contact?: { email: string; facebook: string; youtube: string };
   donateUrl: string;
   siteUpdated?: string;
+  ramadan?: Ramadan;
+  scholarship?: Scholarship;
 };
 
 export const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "", meta: "", image: "", imageAlt: "" };
 export const BLANK_YOUTH_EVENT: YouthEvent = { date: "", title: "", tag: "", meta: "", signupUrl: "", image: "", imageAlt: "" };
 export const BLANK_KHATEEB: Khateeb = { date: "", name: "" };
 export const BLANK_SCHOOL_DATE: SchoolDate = { when: "", what: "" };
+export const BLANK_RAMADAN: Ramadan = {
+  visible: false,
+  iqama: { fajr: "", zuhr: "", asr: "", maghrib: "", isha: "" },
+  khutbas: [], maximizingProgram: [], communityIftars: [],
+  tarawihNote: "", lailatulQadrNote: "", lailatulQadrRegisterUrl: "", lailatulQadrFoodUrl: "",
+  zakatFitrAmount: "", fidyahAmount: "", schedule: [],
+};
 
 /** Is this ISO date today or later? Mirrors the website's own filter. */
 // Youth page fields. The registration heading and the four outside links turn
@@ -186,7 +216,7 @@ export function localScopes(): string[] {
 /** The three portals, in the order they appear in the sidebar. */
 export const PORTALS = [
   { id: "main",   href: "/dashboard/main",   label: "Main Website",
-    blurb: "Iqamah times, Friday khateebs, events, the announcement banner, contact details and the donate link." },
+    blurb: "Iqamah times, Friday khateebs, events, the announcement banner, contact details, the donate link, the Ramadan page, and the scholarship." },
   { id: "school", href: "/dashboard/school", label: "Sunday School",
     blurb: "School year, prayer times during the session, both admissions date tables, and the SunWeb portal links." },
   { id: "youth",  href: "/dashboard/youth",  label: "Youth Group",

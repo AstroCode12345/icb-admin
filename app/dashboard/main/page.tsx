@@ -1,9 +1,13 @@
 "use client";
+import { useState } from "react";
 import {
-  Prayers, Event, Khateeb, BLANK_EVENT, BLANK_KHATEEB,
-  Icon, Section, Grid, Field, Divider, FlyerField, PortalShell, PortalLoading,
+  Prayers, Event, Khateeb, Ramadan, SchoolDate,
+  BLANK_EVENT, BLANK_KHATEEB, BLANK_RAMADAN, BLANK_SCHOOL_DATE,
+  Icon, Section, Grid, Field, Divider, FlyerField, SchoolDateList, PortalShell, PortalLoading,
   usePortal, isUpcoming, shortDate,
 } from "../../portal";
+
+type RamadanListKey = "khutbas" | "maximizingProgram" | "communityIftars";
 
 /**
  * Main website portal: the content that changes across the site as a whole,
@@ -47,6 +51,69 @@ export default function MainPortal() {
     setContent(c => c ? { ...c, khateebs: (c.khateebs ?? []).filter((_, idx) => idx !== i) } : c);
   }
 
+  // --- Ramadan --------------------------------------------------------------
+  function setRamadanField<K extends keyof Ramadan>(key: K, value: Ramadan[K]) {
+    setContent(c => c ? { ...c, ramadan: { ...BLANK_RAMADAN, ...c.ramadan, [key]: value } } : c);
+  }
+  function setRamadanIqama(key: keyof NonNullable<Ramadan["iqama"]>, value: string) {
+    setContent(c => {
+      if (!c) return c;
+      const ramadan = { ...BLANK_RAMADAN, ...c.ramadan };
+      return { ...c, ramadan: { ...ramadan, iqama: { ...ramadan.iqama!, [key]: value } } };
+    });
+  }
+  function updateRamadanList(key: RamadanListKey, i: number, field: keyof SchoolDate, value: string) {
+    setContent(c => {
+      if (!c) return c;
+      const ramadan = { ...BLANK_RAMADAN, ...c.ramadan };
+      const list = [...(ramadan[key] ?? [])];
+      list[i] = { ...list[i], [field]: value };
+      return { ...c, ramadan: { ...ramadan, [key]: list } };
+    });
+  }
+  function addRamadanList(key: RamadanListKey) {
+    setContent(c => {
+      if (!c) return c;
+      const ramadan = { ...BLANK_RAMADAN, ...c.ramadan };
+      return { ...c, ramadan: { ...ramadan, [key]: [...(ramadan[key] ?? []), { ...BLANK_SCHOOL_DATE }] } };
+    });
+  }
+  function removeRamadanList(key: RamadanListKey, i: number) {
+    setContent(c => {
+      if (!c) return c;
+      const ramadan = { ...BLANK_RAMADAN, ...c.ramadan };
+      return { ...c, ramadan: { ...ramadan, [key]: (ramadan[key] ?? []).filter((_, idx) => idx !== i) } };
+    });
+  }
+
+  // Guess next year if it's autumn or later, since that is when Ramadan
+  // planning for the following February or March actually starts. The admin
+  // sees the fetched date range before publishing, so a wrong guess here
+  // costs one click to correct rather than becoming a silent mistake.
+  const [scheduleYear, setScheduleYear] = useState(
+    String(new Date().getFullYear() + (new Date().getMonth() >= 8 ? 1 : 0))
+  );
+  const [fetchingSchedule, setFetchingSchedule] = useState(false);
+  const [scheduleError, setScheduleError] = useState("");
+
+  async function fetchSchedule() {
+    setFetchingSchedule(true);
+    setScheduleError("");
+    try {
+      const token = localStorage.getItem("icb_token") ?? "";
+      const res = await fetch(`/api/ramadan-schedule?year=${encodeURIComponent(scheduleYear)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const out = await res.json();
+      if (!res.ok) { setScheduleError(out.error ?? "Could not fetch the schedule."); return; }
+      setRamadanField("schedule", out.days);
+    } catch (e) {
+      setScheduleError(e instanceof Error ? e.message : "Could not fetch the schedule.");
+    } finally {
+      setFetchingSchedule(false);
+    }
+  }
+
   if (loading) return <PortalLoading />;
   if (!content) return null;
 
@@ -60,6 +127,8 @@ export default function MainPortal() {
         { label: "Events",           href: "#events",       icon: Icon.calendar },
         { label: "Contact & Social", href: "#contact",      icon: Icon.mail },
         { label: "Donate Link",      href: "#donate",       icon: Icon.heart },
+        { label: "Ramadan Page",     href: "#ramadan",      icon: Icon.calendar },
+        { label: "Scholarship",      href: "#scholarship",  icon: Icon.book },
       ]}
       saving={saving} isMock={isMock} repo={repo} toast={toast}
       onPublish={publish} onLogout={logout}
@@ -323,6 +392,136 @@ export default function MainPortal() {
             <input type="url" value={content.donateUrl}
               onChange={e => setContent(c => c ? { ...c, donateUrl: e.target.value } : c)}
               placeholder="https://..." />
+          </Field>
+        </Section>
+
+        {/* Ramadan */}
+        <Section id="ramadan" title="Ramadan Page" icon={Icon.calendar}
+          subtitle="The dedicated Ramadan page and its nav link both stay hidden on the website until you turn this on.">
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label className="toggle-wrap" style={{ display: "inline-flex" }}>
+              <span className="toggle">
+                <input type="checkbox" checked={content.ramadan?.visible ?? false}
+                  onChange={e => setRamadanField("visible", e.target.checked)} />
+                <span className="toggle-track" />
+              </span>
+              <span style={{ fontSize: ".88rem", fontWeight: 600, color: "var(--gray-700)", textTransform: "none", letterSpacing: 0 }}>
+                {content.ramadan?.visible ? "Ramadan page is live" : "Ramadan page is hidden"}
+              </span>
+            </label>
+          </div>
+
+          <Divider label="This Year's Iqama Times" />
+          <Grid cols={3}>
+            {(["fajr", "zuhr", "asr", "maghrib", "isha"] as const).map(name => (
+              <Field key={name} label={name.charAt(0).toUpperCase() + name.slice(1)}>
+                <input type="text" value={content.ramadan?.iqama?.[name] ?? ""}
+                  onChange={e => setRamadanIqama(name, e.target.value)} placeholder="5:00 AM" />
+              </Field>
+            ))}
+          </Grid>
+
+          <Divider label="Suhoor &amp; Iftar Schedule" />
+          <p style={{ fontSize: ".84rem", color: "var(--gray-500)", marginBottom: ".85rem", lineHeight: 1.55 }}>
+            Calculated automatically for Wayland, MA (ISNA method), the same source the old site&rsquo;s
+            schedule used. Enter the Gregorian year Ramadan starts in and fetch it. No typing required.
+          </p>
+          <div style={{ display: "flex", gap: ".75rem", alignItems: "flex-end", marginBottom: ".85rem" }}>
+            <Field label="Year" style={{ flex: "0 0 120px" }}>
+              <input type="text" value={scheduleYear} onChange={e => setScheduleYear(e.target.value)} placeholder="2027" />
+            </Field>
+            <button onClick={fetchSchedule} className="btn btn-ghost" disabled={fetchingSchedule} style={{ padding: ".6rem 1.1rem" }}>
+              {fetchingSchedule ? "Fetching…" : "Fetch Schedule"}
+            </button>
+          </div>
+          {scheduleError && (
+            <p style={{ fontSize: ".85rem", color: "var(--red)", marginBottom: ".75rem" }}>{scheduleError}</p>
+          )}
+          {(content.ramadan?.schedule ?? []).length > 0 ? (
+            <div style={{
+              background: "var(--green-50)", border: "1px solid var(--green-100,#d8f3dc)", borderRadius: 8,
+              padding: "1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: ".75rem",
+            }}>
+              <span style={{ fontSize: ".88rem", color: "var(--gray-700)" }}>
+                {content.ramadan!.schedule!.length} days loaded, {shortDate(content.ramadan!.schedule![0].date)}
+                {" "}to {shortDate(content.ramadan!.schedule![content.ramadan!.schedule!.length - 1].date)}
+              </span>
+              <button onClick={() => setRamadanField("schedule", [])} className="btn btn-ghost" style={{ fontSize: ".82rem", padding: ".4rem .8rem" }}>
+                Clear
+              </button>
+            </div>
+          ) : (
+            <p style={{ fontSize: ".85rem", color: "var(--gray-500)" }}>
+              No schedule loaded yet. The website will say the day-by-day schedule has not been posted.
+            </p>
+          )}
+
+          <SchoolDateList label="Friday Khutbas"
+            rows={content.ramadan?.khutbas ?? []}
+            onChange={(i, f, v) => updateRamadanList("khutbas", i, f, v)}
+            onAdd={() => addRamadanList("khutbas")}
+            onRemove={i => removeRamadanList("khutbas", i)} />
+
+          <SchoolDateList label="Maximizing Ramadan Program"
+            rows={content.ramadan?.maximizingProgram ?? []}
+            onChange={(i, f, v) => updateRamadanList("maximizingProgram", i, f, v)}
+            onAdd={() => addRamadanList("maximizingProgram")}
+            onRemove={i => removeRamadanList("maximizingProgram", i)} />
+
+          <SchoolDateList label="Community Iftars"
+            rows={content.ramadan?.communityIftars ?? []}
+            onChange={(i, f, v) => updateRamadanList("communityIftars", i, f, v)}
+            onAdd={() => addRamadanList("communityIftars")}
+            onRemove={i => removeRamadanList("communityIftars", i)} />
+
+          <Divider label="Tarawih" />
+          <Field label="Tarawih Note">
+            <textarea value={content.ramadan?.tarawihNote ?? ""}
+              onChange={e => setRamadanField("tarawihNote", e.target.value)}
+              placeholder="Tarawih prayers start February 17. Isha at 7:30 PM through March 1, then 8:30 PM."
+              rows={2} />
+          </Field>
+
+          <Divider label="Lailatul Qadr" />
+          <Field label="Lailatul Qadr Note">
+            <textarea value={content.ramadan?.lailatulQadrNote ?? ""}
+              onChange={e => setRamadanField("lailatulQadrNote", e.target.value)}
+              placeholder="Qiyam al-Layl on the 27th of Ramadan, March 15 after Tarawih to March 16 Suhoor."
+              rows={2} />
+          </Field>
+          <Grid cols={2}>
+            <Field label="Registration Link">
+              <input type="url" value={content.ramadan?.lailatulQadrRegisterUrl ?? ""}
+                onChange={e => setRamadanField("lailatulQadrRegisterUrl", e.target.value)}
+                placeholder="https://www.eventbrite.com/..." />
+            </Field>
+            <Field label="Food Sign-Up Link">
+              <input type="url" value={content.ramadan?.lailatulQadrFoodUrl ?? ""}
+                onChange={e => setRamadanField("lailatulQadrFoodUrl", e.target.value)}
+                placeholder="https://signup.com/..." />
+            </Field>
+          </Grid>
+
+          <Divider label="Zakat al-Fitr &amp; Fidyah" />
+          <Grid cols={2}>
+            <Field label="Zakat al-Fitr Amount ($ per person)">
+              <input type="text" value={content.ramadan?.zakatFitrAmount ?? ""}
+                onChange={e => setRamadanField("zakatFitrAmount", e.target.value)} placeholder="15" />
+            </Field>
+            <Field label="Fidyah Amount ($ per missed fast)">
+              <input type="text" value={content.ramadan?.fidyahAmount ?? ""}
+                onChange={e => setRamadanField("fidyahAmount", e.target.value)} placeholder="12" />
+            </Field>
+          </Grid>
+        </Section>
+
+        {/* Scholarship */}
+        <Section id="scholarship" title="College Scholarship" icon={Icon.book}
+          subtitle="The one field on the scholarship page that changes every cycle. Applications, past recipients, and requirements live in the page itself.">
+          <Field label="Starting College Fall Year">
+            <input type="text" value={content.scholarship?.startYear ?? ""}
+              onChange={e => setContent(c => c ? { ...c, scholarship: { ...(c.scholarship ?? {}), startYear: e.target.value } } : c)}
+              placeholder="2027" />
           </Field>
         </Section>
 
