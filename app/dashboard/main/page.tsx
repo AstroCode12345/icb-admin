@@ -3,10 +3,14 @@ import { useState } from "react";
 import {
   Prayers, Event, Khateeb, Ramadan, SchoolDate,
   BLANK_EVENT, BLANK_KHATEEB, BLANK_RAMADAN, BLANK_SCHOOL_DATE,
-  Membership,
-  Icon, Section, Grid, Field, Divider, FlyerField, SchoolDateList, PortalShell, PortalLoading,
+  Membership, BoardMember, Committee, Management,
+  BLANK_BOARD_MEMBER, BLANK_COMMITTEE, BLANK_MANAGEMENT,
+  Icon, Section, Grid, Field, Divider, FlyerField, SchoolDateList,
+  PeopleList, CommitteeList, PortalShell, PortalLoading,
   usePortal, isUpcoming, shortDate,
 } from "../../portal";
+
+type BoardListKey = "boardElected" | "boardAppointed";
 
 type RamadanListKey = "khutbas" | "maximizingProgram" | "communityIftars";
 
@@ -37,6 +41,41 @@ export default function MainPortal() {
   function removeEvent(i: number) {
     setContent(c => c ? { ...c, events: c.events.filter((_, idx) => idx !== i) } : c);
   }
+  // Board and committee edits all reshape one key, so they share these helpers.
+  function withManagement(fn: (m: Management) => Management) {
+    setContent(c => c ? { ...c, management: fn(c.management ?? { ...BLANK_MANAGEMENT }) } : c);
+  }
+  function updatePerson(list: BoardListKey, i: number, field: keyof BoardMember, value: string) {
+    withManagement(m => {
+      const rows = [...(m[list] ?? [])];
+      rows[i] = { ...rows[i], [field]: value };
+      return { ...m, [list]: rows };
+    });
+  }
+  function addPerson(list: BoardListKey) {
+    withManagement(m => ({ ...m, [list]: [...(m[list] ?? []), { ...BLANK_BOARD_MEMBER }] }));
+  }
+  function removePerson(list: BoardListKey, i: number) {
+    withManagement(m => ({ ...m, [list]: (m[list] ?? []).filter((_, idx) => idx !== i) }));
+  }
+  function updateCommittee(i: number, field: keyof Committee, value: string) {
+    withManagement(m => {
+      const rows = [...(m.committees ?? [])];
+      // Chairs are typed as one comma-separated line and stored as a list, so
+      // the website can put each name on its own row.
+      rows[i] = field === "leads"
+        ? { ...rows[i], leads: value.split(",").map(s => s.trim()).filter(Boolean) }
+        : { ...rows[i], [field]: value };
+      return { ...m, committees: rows };
+    });
+  }
+  function addCommittee() {
+    withManagement(m => ({ ...m, committees: [...(m.committees ?? []), { ...BLANK_COMMITTEE }] }));
+  }
+  function removeCommittee(i: number) {
+    withManagement(m => ({ ...m, committees: (m.committees ?? []).filter((_, idx) => idx !== i) }));
+  }
+
   function updateKhateeb(i: number, field: keyof Khateeb, value: string) {
     setContent(c => {
       if (!c) return c;
@@ -131,6 +170,7 @@ export default function MainPortal() {
         { label: "Ramadan Page",     href: "#ramadan",      icon: Icon.calendar },
         { label: "Scholarship",      href: "#scholarship",  icon: Icon.book },
         { label: "Membership Fees",  href: "#membership",   icon: Icon.users },
+        { label: "Board & Committees", href: "#management", icon: Icon.users },
       ]}
       saving={saving} isMock={isMock} repo={repo} toast={toast}
       onPublish={publish} onLogout={logout}
@@ -550,6 +590,38 @@ export default function MainPortal() {
           <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
             Found in PayPal under the button&rsquo;s own settings, not a password. Only change this if the
             renewal button is recreated on PayPal&rsquo;s side.
+          </p>
+        </Section>
+
+        {/* Board & Committees */}
+        <Section id="management" title="Board & Committees" icon={Icon.users}
+          subtitle="Who holds each position on the About &rsaquo; Board &amp; Committees page.">
+          <PeopleList
+            label="Elected Board"
+            rows={content.management?.boardElected ?? []}
+            onChange={(i, f, v) => updatePerson("boardElected", i, f, v)}
+            onAdd={() => addPerson("boardElected")}
+            onRemove={i => removePerson("boardElected", i)}
+            addLabel="Add Board Member"
+            emptyNote="No board members listed. The Board of Directors table will be empty."
+          />
+          <PeopleList
+            label="Appointed Positions"
+            rows={content.management?.boardAppointed ?? []}
+            onChange={(i, f, v) => updatePerson("boardAppointed", i, f, v)}
+            onAdd={() => addPerson("boardAppointed")}
+            onRemove={i => removePerson("boardAppointed", i)}
+            addLabel="Add Appointed Position"
+            emptyNote="No appointed positions listed. That table will be empty."
+          />
+          <CommitteeList
+            rows={content.management?.committees ?? []}
+            onChange={updateCommittee}
+            onAdd={addCommittee}
+            onRemove={removeCommittee}
+          />
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".85rem" }}>
+            Separate two chairpersons with a comma. Emails are lowercased automatically.
           </p>
         </Section>
 

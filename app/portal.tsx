@@ -56,6 +56,16 @@ export type Ramadan = {
 export type Scholarship = { startYear?: string };
 export type Membership = { familyFee?: string; singleFee?: string; paypalButtonId?: string };
 
+// Who holds which office. Elected seats turn over on their own terms, appointed
+// ones whenever the board appoints, and committee chairs change most often.
+export type BoardMember = { name: string; position: string; email: string; term: string };
+export type Committee = { name: string; leads: string[]; description: string };
+export type Management = {
+  boardElected: BoardMember[];
+  boardAppointed: BoardMember[];
+  committees: Committee[];
+};
+
 export type Content = {
   prayers: Prayers;
   khateebs?: Khateeb[];
@@ -71,12 +81,16 @@ export type Content = {
   ramadan?: Ramadan;
   scholarship?: Scholarship;
   membership?: Membership;
+  management?: Management;
 };
 
 export const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "", meta: "", image: "", imageAlt: "" };
 export const BLANK_YOUTH_EVENT: YouthEvent = { date: "", title: "", tag: "", meta: "", signupUrl: "", image: "", imageAlt: "" };
 export const BLANK_KHATEEB: Khateeb = { date: "", name: "" };
 export const BLANK_SCHOOL_DATE: SchoolDate = { when: "", what: "" };
+export const BLANK_BOARD_MEMBER: BoardMember = { name: "", position: "", email: "", term: "" };
+export const BLANK_COMMITTEE: Committee = { name: "", leads: [], description: "" };
+export const BLANK_MANAGEMENT: Management = { boardElected: [], boardAppointed: [], committees: [] };
 export const BLANK_RAMADAN: Ramadan = {
   visible: false,
   iqama: { fajr: "", zuhr: "", asr: "", maghrib: "", isha: "" },
@@ -301,6 +315,103 @@ export function SchoolDateList({ label, rows, onChange, onAdd, onRemove }: {
         {Icon.plus} Add Date
       </button>
     </div>
+  );
+}
+
+export function PeopleList({ label, rows, onChange, onAdd, onRemove, addLabel, emptyNote }: {
+  label: string;
+  rows: BoardMember[];
+  onChange: (i: number, field: keyof BoardMember, value: string) => void;
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+  addLabel: string;
+  emptyNote: string;
+}) {
+  return (
+    <div style={{ marginTop: "1.5rem" }}>
+      <Divider label={label} />
+      {rows.length === 0 && (
+        <p style={{ fontSize: ".88rem", color: "var(--gray-500)", margin: ".75rem 0" }}>{emptyNote}</p>
+      )}
+      {rows.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: ".75rem", alignItems: "flex-end", marginBottom: ".6rem" }}>
+          <Field label={i === 0 ? "Name" : ""} style={{ flex: "0 0 150px" }}>
+            <input type="text" value={r.name} onChange={e => onChange(i, "name", e.target.value)} placeholder="Faiza Khan" />
+          </Field>
+          <Field label={i === 0 ? "Position" : ""} style={{ flex: 1 }}>
+            <input type="text" value={r.position} onChange={e => onChange(i, "position", e.target.value)} placeholder="President" />
+          </Field>
+          <Field label={i === 0 ? "Email" : ""} style={{ flex: "0 0 210px" }}>
+            <input type="text" value={r.email}
+              onChange={e => onChange(i, "email", e.target.value.toLowerCase())}
+              placeholder="president@icbwayland.org" />
+          </Field>
+          <Field label={i === 0 ? "Term" : ""} style={{ flex: "0 0 200px" }}>
+            <input type="text" value={r.term} onChange={e => onChange(i, "term", e.target.value)}
+              placeholder="July 1, 2026 – June 30, 2028" />
+          </Field>
+          <RemoveButton onClick={() => onRemove(i)} />
+        </div>
+      ))}
+      <button onClick={onAdd} className="btn btn-ghost" style={{ width: "100%", gap: ".4rem", marginTop: ".25rem" }}>
+        {Icon.plus} {addLabel}
+      </button>
+    </div>
+  );
+}
+
+export function CommitteeList({ rows, onChange, onAdd, onRemove }: {
+  rows: Committee[];
+  onChange: (i: number, field: keyof Committee, value: string) => void;
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+}) {
+  return (
+    <div style={{ marginTop: "1.5rem" }}>
+      <Divider label="Committees" />
+      {rows.length === 0 && (
+        <p style={{ fontSize: ".88rem", color: "var(--gray-500)", margin: ".75rem 0" }}>
+          No committees listed. The Committees tab on the website will be empty.
+        </p>
+      )}
+      {rows.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: ".75rem", alignItems: "flex-end", marginBottom: ".6rem" }}>
+          <Field label={i === 0 ? "Committee" : ""} style={{ flex: "0 0 190px" }}>
+            <input type="text" value={r.name} onChange={e => onChange(i, "name", e.target.value)} placeholder="Social Activities" />
+          </Field>
+          <Field label={i === 0 ? "Chairperson(s)" : ""} style={{ flex: "0 0 240px" }}>
+            <input type="text" value={(r.leads ?? []).join(", ")}
+              onChange={e => onChange(i, "leads", e.target.value)}
+              placeholder="Seeme Moreira, Huma Najam" />
+          </Field>
+          <Field label={i === 0 ? "What it does" : ""} style={{ flex: 1 }}>
+            <input type="text" value={r.description} onChange={e => onChange(i, "description", e.target.value)}
+              placeholder="This committee shall be responsible for..." />
+          </Field>
+          <RemoveButton onClick={() => onRemove(i)} />
+        </div>
+      ))}
+      <button onClick={onAdd} className="btn btn-ghost" style={{ width: "100%", gap: ".4rem", marginTop: ".25rem" }}>
+        {Icon.plus} Add Committee
+      </button>
+    </div>
+  );
+}
+
+function RemoveButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} title="Remove"
+      style={{
+        background: "transparent", border: "none", color: "var(--gray-300)",
+        cursor: "pointer", padding: ".55rem .2rem", lineHeight: 0, transition: "color .15s",
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--red)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--gray-300)"; }}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
   );
 }
 
