@@ -33,6 +33,10 @@ export type SundaySchool = {
   year?: string; zuhr?: string; asr?: string;
   existingDates?: SchoolDate[]; newDates?: SchoolDate[];
   parentPortalUrl?: string; teacherPortalUrl?: string;
+  // Where each admissions cycle stands, rewritten as the year turns.
+  existingNote?: string; newNote?: string;
+  showCurriculum?: boolean;
+  calendarUrl?: string;
 };
 // A day's five Iqama times during Ramadan, fetched from the Aladhan
 // calculation API rather than typed in by hand — see the "Fetch Schedule"

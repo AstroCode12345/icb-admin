@@ -1,7 +1,7 @@
 "use client";
 import {
   SundaySchool, SchoolDate, BLANK_SCHOOL_DATE,
-  Icon, Section, Grid, Field, SchoolDateList, PortalShell, PortalLoading, usePortal,
+  Icon, Section, Grid, Field, Divider, SchoolDateList, PortalShell, PortalLoading, usePortal,
 } from "../../portal";
 
 /**
@@ -13,7 +13,7 @@ export default function SchoolPortal() {
 
   type DateList = "existingDates" | "newDates";
 
-  function setSchool(field: keyof SundaySchool, value: string) {
+  function setSchool(field: keyof SundaySchool, value: string | boolean) {
     setContent(c => c ? { ...c, sundaySchool: { ...(c.sundaySchool ?? {}), [field]: value } } : c);
   }
   function updateSchoolDate(list: DateList, i: number, field: keyof SchoolDate, value: string) {
@@ -71,6 +71,22 @@ export default function SchoolPortal() {
             </Field>
           </Grid>
 
+          <Divider label="Admissions Status" />
+          <Field label="Existing Families: what to say right now" style={{ marginTop: ".75rem" }}>
+            <textarea rows={3} value={content.sundaySchool?.existingNote ?? ""}
+              onChange={e => setSchool("existingNote", e.target.value)}
+              placeholder="Admissions are now complete and school has started..." />
+          </Field>
+          <Field label="New Families: what to say right now" style={{ marginTop: ".85rem" }}>
+            <textarea rows={3} value={content.sundaySchool?.newNote ?? ""}
+              onChange={e => setSchool("newNote", e.target.value)}
+              placeholder="As-salaamu 'alaykum, and welcome! We offer two program options..." />
+          </Field>
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            The opening paragraph of each admissions card. Use this to say whether admissions are
+            open, closed, or complete. The SunWebApp link and the register button stay put.
+          </p>
+
           <SchoolDateList
             label="Key Dates: Existing Families"
             rows={content.sundaySchool?.existingDates ?? []}
@@ -85,6 +101,26 @@ export default function SchoolPortal() {
             onAdd={() => addSchoolDate("newDates")}
             onRemove={i => removeSchoolDate("newDates", i)}
           />
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            Leave a list empty and its table stays off the page, rather than showing last
+            year&rsquo;s deadlines.
+          </p>
+
+          <Divider label="Curriculum Section" />
+          <label className="toggle-wrap" style={{ display: "inline-flex", marginTop: ".75rem" }}>
+            <span className="toggle">
+              <input type="checkbox" checked={content.sundaySchool?.showCurriculum ?? false}
+                onChange={e => setSchool("showCurriculum", e.target.checked)} />
+              <span className="toggle-track" />
+            </span>
+            <span style={{ fontSize: ".88rem", fontWeight: 600, color: "var(--gray-700)", textTransform: "none", letterSpacing: 0 }}>
+              {content.sundaySchool?.showCurriculum ? "Curriculum section is showing" : "Curriculum section is hidden"}
+            </span>
+          </label>
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            The Islamic Arabic and Religion cards with their curriculum PDFs. Hidden because the
+            documents are from 2019-20. Turn back on once they are replaced.
+          </p>
         </Section>
 
 
@@ -100,6 +136,15 @@ export default function SchoolPortal() {
               onChange={e => setSchool("teacherPortalUrl", e.target.value)}
               placeholder="https://sunweb.us/admin/admin-login?s=icbwaylandss" />
           </Field>
+          <Field label="School Calendar URL" style={{ marginTop: ".85rem" }}>
+            <input type="text" value={content.sundaySchool?.calendarUrl ?? ""}
+              onChange={e => setSchool("calendarUrl", e.target.value)}
+              placeholder="/calendar/" />
+          </Field>
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            Behind the School Calendar button in the School page quick links. Currently the ICB
+            events calendar; point it at the school&rsquo;s own calendar when there is one.
+          </p>
         </Section>
     </PortalShell>
   );
