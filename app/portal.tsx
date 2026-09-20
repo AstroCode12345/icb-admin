@@ -39,7 +39,12 @@ export type SundaySchool = {
   calendarUrl?: string;
   // The school year's key Sundays, and whether that section is showing.
   showCalendar?: boolean; calendarDates?: SchoolDate[];
+  contacts?: SchoolContact[];
 };
+
+/** One person in the School page's contact tables. Entries sharing a group and
+ *  a role are shown together on one row of that group's table. */
+export type SchoolContact = { group: string; role: string; name: string; email: string };
 // A day's five Iqama times during Ramadan, fetched from the Aladhan
 // calculation API rather than typed in by hand — see the "Fetch Schedule"
 // button on the Ramadan section. `date` is an ISO yyyy-mm-dd string, same as
@@ -94,6 +99,7 @@ export const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "
 export const BLANK_YOUTH_EVENT: YouthEvent = { date: "", title: "", tag: "", meta: "", signupUrl: "", image: "", imageAlt: "" };
 export const BLANK_KHATEEB: Khateeb = { date: "", name: "" };
 export const BLANK_SCHOOL_DATE: SchoolDate = { when: "", what: "" };
+export const BLANK_SCHOOL_CONTACT: SchoolContact = { group: "", role: "", name: "", email: "" };
 export const BLANK_BOARD_MEMBER: BoardMember = { name: "", position: "", email: "", term: "" };
 export const BLANK_COMMITTEE: Committee = { name: "", leads: [], description: "" };
 export const BLANK_MANAGEMENT: Management = { boardElected: [], boardAppointed: [], committees: [] };
@@ -406,6 +412,59 @@ export function CommitteeList({ rows, onChange, onAdd, onRemove }: {
       ))}
       <button onClick={onAdd} className="btn btn-ghost" style={{ width: "100%", gap: ".4rem", marginTop: ".25rem" }}>
         {Icon.plus} Add Committee
+      </button>
+    </div>
+  );
+}
+
+export function SchoolContactList({ rows, onChange, onAdd, onRemove }: {
+  rows: SchoolContact[];
+  onChange: (i: number, field: keyof SchoolContact, value: string) => void;
+  onAdd: () => void;
+  onRemove: (i: number) => void;
+}) {
+  // Offer the groups already in use, so a new person lands in an existing
+  // table instead of creating a near-duplicate heading with a typo in it.
+  const groups = [...new Set(rows.map(r => r.group).filter(Boolean))];
+  return (
+    <div style={{ marginTop: "1.5rem" }}>
+      <Divider label="People" />
+      {rows.length === 0 && (
+        <p style={{ fontSize: ".88rem", color: "var(--gray-500)", margin: ".75rem 0" }}>
+          No contacts listed. The Contacts section on the School page will keep whatever is
+          currently on it.
+        </p>
+      )}
+      <datalist id="school-contact-groups">
+        {groups.map(g => <option key={g} value={g} />)}
+      </datalist>
+      {rows.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: ".75rem", alignItems: "flex-end", marginBottom: ".6rem" }}>
+          <Field label={i === 0 ? "Table" : ""} style={{ flex: "0 0 210px" }}>
+            <input type="text" list="school-contact-groups" value={r.group}
+              onChange={e => onChange(i, "group", e.target.value)}
+              placeholder="ICB Sunday School – Morning Program" />
+          </Field>
+          <Field label={i === 0 ? "Role" : ""} style={{ flex: "0 0 170px" }}>
+            <input type="text" value={r.role}
+              onChange={e => onChange(i, "role", e.target.value)}
+              placeholder="Principal" />
+          </Field>
+          <Field label={i === 0 ? "Name" : ""} style={{ flex: 1 }}>
+            <input type="text" value={r.name}
+              onChange={e => onChange(i, "name", e.target.value)}
+              placeholder="Rehna Khan" />
+          </Field>
+          <Field label={i === 0 ? "Email" : ""} style={{ flex: "0 0 230px" }}>
+            <input type="text" value={r.email}
+              onChange={e => onChange(i, "email", e.target.value.toLowerCase())}
+              placeholder="principal.am@icbwayland.org" />
+          </Field>
+          <RemoveButton onClick={() => onRemove(i)} />
+        </div>
+      ))}
+      <button onClick={onAdd} className="btn btn-ghost" style={{ width: "100%", gap: ".4rem", marginTop: ".25rem" }}>
+        {Icon.plus} Add Contact
       </button>
     </div>
   );

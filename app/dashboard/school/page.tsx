@@ -1,7 +1,9 @@
 "use client";
 import {
   SundaySchool, SchoolDate, BLANK_SCHOOL_DATE,
-  Icon, Section, Grid, Field, Divider, SchoolDateList, PortalShell, PortalLoading, usePortal,
+  SchoolContact, BLANK_SCHOOL_CONTACT,
+  Icon, Section, Grid, Field, Divider, SchoolDateList, SchoolContactList,
+  PortalShell, PortalLoading, usePortal,
 } from "../../portal";
 
 /**
@@ -37,6 +39,33 @@ export default function SchoolPortal() {
     } } : c);
   }
 
+  function updateContact(i: number, field: keyof SchoolContact, value: string) {
+    setContent(c => {
+      if (!c) return c;
+      const rows = [...(c.sundaySchool?.contacts ?? [])];
+      rows[i] = { ...rows[i], [field]: value };
+      return { ...c, sundaySchool: { ...(c.sundaySchool ?? {}), contacts: rows } };
+    });
+  }
+  function addContact() {
+    setContent(c => {
+      if (!c) return c;
+      const rows = c.sundaySchool?.contacts ?? [];
+      // Start a new person in the same table as the last one, which is almost
+      // always the intent when adding several people to one group.
+      const group = rows.length ? rows[rows.length - 1].group : "";
+      return { ...c, sundaySchool: {
+        ...(c.sundaySchool ?? {}), contacts: [...rows, { ...BLANK_SCHOOL_CONTACT, group }],
+      } };
+    });
+  }
+  function removeContact(i: number) {
+    setContent(c => c ? { ...c, sundaySchool: {
+      ...(c.sundaySchool ?? {}),
+      contacts: (c.sundaySchool?.contacts ?? []).filter((_, idx) => idx !== i),
+    } } : c);
+  }
+
   if (loading) return <PortalLoading />;
   if (!content) return null;
 
@@ -46,6 +75,7 @@ export default function SchoolPortal() {
       sections={[
         { label: "School Details",  href: "#school",   icon: Icon.book },
         { label: "School Calendar", href: "#calendar", icon: Icon.calendar },
+        { label: "Contacts",        href: "#contacts", icon: Icon.users },
         { label: "Portal Links",    href: "#portals",  icon: Icon.mail },
       ]}
       saving={saving} isMock={isMock} repo={repo} toast={toast}
@@ -155,6 +185,22 @@ export default function SchoolPortal() {
           <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
             First and last day, no-school Sundays, breaks, assessment days, conferences and
             graduation. Listed in the order you enter them.
+          </p>
+        </Section>
+
+        {/* Contacts */}
+        <Section id="contacts" title="School Contacts" icon={Icon.users}
+          subtitle="The staff tables at the bottom of the School page. Principals, assistant principals, and the leadership and support team.">
+          <SchoolContactList
+            rows={content.sundaySchool?.contacts ?? []}
+            onChange={updateContact}
+            onAdd={addContact}
+            onRemove={removeContact}
+          />
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            &ldquo;Table&rdquo; is the heading a person appears under, and people are listed in the
+            order you enter them. Give two people the same table and role, such as two assistant
+            principals, and they share one row. Emails are lowercased automatically.
           </p>
         </Section>
 
