@@ -11,7 +11,7 @@ import {
 export default function SchoolPortal() {
   const { content, setContent, isMock, repo, loading, saving, toast, publish, logout } = usePortal("school");
 
-  type DateList = "existingDates" | "newDates";
+  type DateList = "existingDates" | "newDates" | "calendarDates";
 
   function setSchool(field: keyof SundaySchool, value: string | boolean) {
     setContent(c => c ? { ...c, sundaySchool: { ...(c.sundaySchool ?? {}), [field]: value } } : c);
@@ -44,8 +44,9 @@ export default function SchoolPortal() {
     <PortalShell
       portal="school"
       sections={[
-        { label: "School Details", href: "#school",  icon: Icon.book },
-        { label: "Portal Links",   href: "#portals", icon: Icon.mail },
+        { label: "School Details",  href: "#school",   icon: Icon.book },
+        { label: "School Calendar", href: "#calendar", icon: Icon.calendar },
+        { label: "Portal Links",    href: "#portals",  icon: Icon.mail },
       ]}
       saving={saving} isMock={isMock} repo={repo} toast={toast}
       onPublish={publish} onLogout={logout}
@@ -123,6 +124,39 @@ export default function SchoolPortal() {
           </p>
         </Section>
 
+
+        {/* School Calendar */}
+        <Section id="calendar" title="School Calendar" icon={Icon.calendar}
+          subtitle="The key Sundays of the school year, shown on the School page between the timetable and admissions.">
+          <label className="toggle-wrap" style={{ display: "inline-flex" }}>
+            <span className="toggle">
+              <input type="checkbox" checked={content.sundaySchool?.showCalendar ?? false}
+                onChange={e => setSchool("showCalendar", e.target.checked)} />
+              <span className="toggle-track" />
+            </span>
+            <span style={{ fontSize: ".88rem", fontWeight: 600, color: "var(--gray-700)", textTransform: "none", letterSpacing: 0 }}>
+              {content.sundaySchool?.showCalendar ? "Calendar section is showing" : "Calendar section is hidden"}
+            </span>
+          </label>
+
+          <SchoolDateList
+            label="Key Sundays"
+            rows={content.sundaySchool?.calendarDates ?? []}
+            onChange={(i, f, v) => updateSchoolDate("calendarDates", i, f, v)}
+            onAdd={() => addSchoolDate("calendarDates")}
+            onRemove={i => removeSchoolDate("calendarDates", i)}
+            whenLabel="Date (Sunday)"
+            whatLabel="School calendar event"
+            addLabel="Add Date"
+            whenPlaceholder="9/13/2026"
+            whatPlaceholder="First day of school"
+            emptyNote="No dates listed yet. Add the year's Sundays, then turn the section on above."
+          />
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            First and last day, no-school Sundays, breaks, assessment days, conferences and
+            graduation. Listed in the order you enter them.
+          </p>
+        </Section>
 
         <Section id="portals" title="SunWeb Portal Links" icon={Icon.mail}
           subtitle="The parent and teacher logins, linked from the top of the School page and again from its quick links.">

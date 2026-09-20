@@ -37,6 +37,8 @@ export type SundaySchool = {
   existingNote?: string; newNote?: string;
   showCurriculum?: boolean;
   calendarUrl?: string;
+  // The school year's key Sundays, and whether that section is showing.
+  showCalendar?: boolean; calendarDates?: SchoolDate[];
 };
 // A day's five Iqama times during Ramadan, fetched from the Aladhan
 // calculation API rather than typed in by hand — see the "Fetch Schedule"
@@ -273,33 +275,40 @@ export function Section({ id, title, icon, subtitle, children }: {
  * One of the School page's two admissions tables. Rows are printed in the order
  * they sit here, so reordering in the portal reorders them on the site.
  */
-export function SchoolDateList({ label, rows, onChange, onAdd, onRemove }: {
+export function SchoolDateList({ label, rows, onChange, onAdd, onRemove,
+  whenLabel = "When", whatLabel = "What happens", addLabel = "Add Date",
+  whenPlaceholder = "May 15, 2026", whatPlaceholder = "Deadline to register without late fee",
+  emptyNote = "No dates listed. The School page will say the dates for the coming year have not been announced yet.",
+}: {
   label: string;
   rows: SchoolDate[];
   onChange: (i: number, field: keyof SchoolDate, value: string) => void;
   onAdd: () => void;
   onRemove: (i: number) => void;
+  whenLabel?: string;
+  whatLabel?: string;
+  addLabel?: string;
+  whenPlaceholder?: string;
+  whatPlaceholder?: string;
+  emptyNote?: string;
 }) {
   return (
     <div style={{ marginTop: "1.5rem" }}>
       <Divider label={label} />
       {rows.length === 0 && (
-        <p style={{ fontSize: ".88rem", color: "var(--gray-500)", margin: ".75rem 0" }}>
-          No dates listed. The School page will say the dates for the coming year
-          have not been announced yet.
-        </p>
+        <p style={{ fontSize: ".88rem", color: "var(--gray-500)", margin: ".75rem 0" }}>{emptyNote}</p>
       )}
       {rows.map((r, i) => (
         <div key={i} style={{ display: "flex", gap: ".75rem", alignItems: "flex-end", marginBottom: ".6rem" }}>
-          <Field label={i === 0 ? "When" : ""} style={{ flex: "0 0 170px" }}>
+          <Field label={i === 0 ? whenLabel : ""} style={{ flex: "0 0 170px" }}>
             <input type="text" value={r.when}
               onChange={e => onChange(i, "when", e.target.value)}
-              placeholder="May 15, 2026" />
+              placeholder={whenPlaceholder} />
           </Field>
-          <Field label={i === 0 ? "What happens" : ""} style={{ flex: 1 }}>
+          <Field label={i === 0 ? whatLabel : ""} style={{ flex: 1 }}>
             <input type="text" value={r.what}
               onChange={e => onChange(i, "what", e.target.value)}
-              placeholder="Deadline to register without late fee" />
+              placeholder={whatPlaceholder} />
           </Field>
           <button onClick={() => onRemove(i)} title="Remove"
             style={{
@@ -316,7 +325,7 @@ export function SchoolDateList({ label, rows, onChange, onAdd, onRemove }: {
         </div>
       ))}
       <button onClick={onAdd} className="btn btn-ghost" style={{ width: "100%", gap: ".4rem", marginTop: ".25rem" }}>
-        {Icon.plus} Add Date
+        {Icon.plus} {addLabel}
       </button>
     </div>
   );
