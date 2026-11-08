@@ -168,6 +168,7 @@ export default function MainPortal() {
         { label: "Contact & Social", href: "#contact",      icon: Icon.mail },
         { label: "Donate Link",      href: "#donate",       icon: Icon.heart },
         { label: "Ramadan Page",     href: "#ramadan",      icon: Icon.calendar },
+        { label: "Iftar Sponsorship", href: "#iftar",       icon: Icon.moon },
         { label: "Scholarship",      href: "#scholarship",  icon: Icon.book },
         { label: "Membership Fees",  href: "#membership",   icon: Icon.users },
         { label: "Board & Committees", href: "#management", icon: Icon.users },
@@ -555,6 +556,25 @@ export default function MainPortal() {
                 onChange={e => setRamadanField("fidyahAmount", e.target.value)} placeholder="12" />
             </Field>
           </Grid>
+        </Section>
+
+        {/* Iftar Sponsorship */}
+        <Section id="iftar" title="Iftar Sponsorship" icon={Icon.moon}
+          subtitle="The Iftar Sponsorship page, its card on the Prayers page, and its quick link on the homepage.">
+          <label className="toggle-wrap" style={{ display: "inline-flex" }}>
+            <span className="toggle">
+              <input type="checkbox" checked={content.ramadan?.showIftarSponsorship ?? false}
+                onChange={e => setRamadanField("showIftarSponsorship", e.target.checked)} />
+              <span className="toggle-track" />
+            </span>
+            <span style={{ fontSize: ".88rem", fontWeight: 600, color: "var(--gray-700)", textTransform: "none", letterSpacing: 0 }}>
+              {content.ramadan?.showIftarSponsorship ? "Iftar sponsorship is showing" : "Iftar sponsorship is hidden"}
+            </span>
+          </label>
+          <p style={{ fontSize: ".8rem", color: "var(--gray-500)", marginTop: ".5rem" }}>
+            Turn this off when sponsorship closes. The card and the quick link disappear, and the
+            page stays at its address but says sponsorship is not open right now.
+          </p>
         </Section>
 
         {/* Scholarship */}
