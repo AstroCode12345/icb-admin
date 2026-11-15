@@ -193,7 +193,7 @@ export default function MainPortal() {
           </Grid>
           <Divider label="Friday Prayer" />
           <Grid cols={2}>
-            <Field label="Khutbah Begins">
+            <Field label="Khutba Begins">
               <input type="text" value={content.prayers.jumuah.khutbah} onChange={e => setJumuah("khutbah", e.target.value)} placeholder="1:00 PM" />
             </Field>
             <Field label="Iqamah">
