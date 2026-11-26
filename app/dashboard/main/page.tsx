@@ -368,6 +368,18 @@ export default function MainPortal() {
                 <input value={ev.meta} onChange={e => updateEvent(i, "meta", e.target.value)} placeholder="Saturday · 10:00 AM · Open to all" />
               </Field>
 
+              {/* Optional link, shown on the event as a button */}
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem", marginTop: ".75rem" }}>
+                <Field label="Link (optional)">
+                  <input value={ev.linkUrl ?? ""} onChange={e => updateEvent(i, "linkUrl", e.target.value)}
+                    placeholder="https://forms.gle/…" />
+                </Field>
+                <Field label="Button Text">
+                  <input value={ev.linkLabel ?? ""} onChange={e => updateEvent(i, "linkLabel", e.target.value)}
+                    placeholder="Learn more" />
+                </Field>
+              </div>
+
                 <FlyerField
                   value={ev.image}
                   alt={ev.imageAlt}

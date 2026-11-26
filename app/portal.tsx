@@ -22,7 +22,7 @@ export type Prayers = {
 // `date` is an ISO yyyy-mm-dd string. The website derives the month/day badge
 // from it and hides anything already past, so an event that is not removed
 // here simply stops showing instead of sitting on the homepage as "upcoming".
-export type Event = { date: string; featured: boolean; tag: string; title: string; meta: string; image?: string; imageAlt?: string; };
+export type Event = { date: string; featured: boolean; tag: string; title: string; meta: string; image?: string; imageAlt?: string; linkUrl?: string; linkLabel?: string; };
 export type YouthEvent = { date: string; title: string; tag?: string; meta?: string; signupUrl?: string; image?: string; imageAlt?: string; };
 export type Khateeb = { date: string; name: string };
 // Free text rather than an ISO date: the school publishes ranges like
@@ -97,7 +97,7 @@ export type Content = {
   management?: Management;
 };
 
-export const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "", meta: "", image: "", imageAlt: "" };
+export const BLANK_EVENT: Event = { date: "", featured: false, tag: "", title: "", meta: "", image: "", imageAlt: "", linkUrl: "", linkLabel: "" };
 export const BLANK_YOUTH_EVENT: YouthEvent = { date: "", title: "", tag: "", meta: "", signupUrl: "", image: "", imageAlt: "" };
 export const BLANK_KHATEEB: Khateeb = { date: "", name: "" };
 export const BLANK_SCHOOL_DATE: SchoolDate = { when: "", what: "" };
